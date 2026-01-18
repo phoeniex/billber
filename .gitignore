@@ -7,21 +7,63 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Build outputs
+dist/
+dist-ssr/
 *.local
 
-# Editor directories and files
+# Production
+build/
+
+# IDEs and Editors
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.bak
+
+# Environment / Secret
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
 
 # Local Netlify folder
-.netlify
+.netlify/
+
+# OS specific files
+Thumb.db
+db.lck
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+[Tt]humbs.db
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# TypeScript cache
+*.tsbuildinfo
+
+# next.js (if applicable later)
+.next/
+out/
