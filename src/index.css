@@ -1,0 +1,74 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    html {
+        @apply bg-base-200;
+    }
+
+    body,
+    #root {
+        @apply min-h-screen bg-base-200;
+    }
+
+    body {
+        font-family: 'Outfit', sans-serif;
+    }
+}
+
+@layer utilities {
+
+    /* Custom animations */
+    @keyframes slideInRight {
+        from {
+            opacity: 0;
+            transform: translateX(100px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-slide-in-right {
+        animation: slideInRight 0.3s ease-out;
+    }
+
+    .animate-slide-in-up {
+        animation: slideInUp 0.5s ease-out;
+    }
+
+    /* Gradient text */
+    .gradient-text {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* Custom stat card hover effect */
+    .stat-card-hover {
+        transition: all 0.3s ease;
+    }
+
+    .stat-card-hover:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+}
