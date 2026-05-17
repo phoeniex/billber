@@ -7,9 +7,9 @@ interface BillCardProps {
     bill: Bill;
     currency: string;
     locale: string;
-    onMarkAsPaid: (id: number) => void;
-    onSkip: (id: number) => void;
-    onDelete: (id: number) => void;
+    onMarkAsPaid: (id: string) => void;
+    onSkip: (id: string) => void;
+    onDelete: (id: string) => void;
     onViewHistory: (bill: Bill) => void;
 }
 
@@ -37,7 +37,7 @@ export const BillCard = ({ bill, currency, locale, onMarkAsPaid, onSkip, onDelet
     const formattedAmount = new Intl.NumberFormat(locale, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
-    }).format(bill.amount);
+    }).format(bill.amount || 0);
 
     return (
         <div className={`card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border-t-4 ${getBorderColor()} animate-slide-in-up group`}>

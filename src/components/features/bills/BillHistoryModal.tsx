@@ -73,9 +73,9 @@ export const BillHistoryModal = ({ isOpen, onClose, currentBill, allBills, curre
                                 <div className="text-right">
                                     <div className="font-bold">
                                         {record.status === 'paid' ? (
-                                            <span className="text-success">{currency}{formatAmount(record.paidAmount || record.amount)}</span>
+                                            <span className="text-success">{currency}{formatAmount(record.paidAmount || record.amount || 0)}</span>
                                         ) : (
-                                            <span className="opacity-50 line-through">{currency}{formatAmount(record.amount)}</span>
+                                            <span className="opacity-50 line-through">{currency}{formatAmount(record.amount || 0)}</span>
                                         )}
                                     </div>
                                     <div className="flex justify-end gap-2 mt-1">

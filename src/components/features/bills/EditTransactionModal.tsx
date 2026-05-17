@@ -31,7 +31,7 @@ export const EditTransactionModal = ({
         if (isOpen && transaction) {
             setDueDate(transaction.dueDate);
             setPaidDate(transaction.paidDate || '');
-            setPaidAmount(transaction.paidAmount?.toString() || transaction.amount.toString());
+            setPaidAmount(transaction.paidAmount?.toString() || transaction.amount?.toString() || '0');
             setNote(transaction.note || '');
         }
     }, [isOpen, transaction]);
