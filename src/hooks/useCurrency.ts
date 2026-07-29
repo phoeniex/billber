@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { DEFAULT_CURRENCY, DEFAULT_LOCALE } from '@/utils/constants';
 import { useAuth } from '@/contexts/AuthContext';
-import { db } from '@/lib/firebase';
+import { db, isFirebaseConfigured } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 export const useCurrency = () => {
@@ -15,7 +15,7 @@ export const useCurrency = () => {
             let savedCurrency = localStorage.getItem('currency');
             let savedLocale = localStorage.getItem('locale');
 
-            if (user) {
+            if (user && isFirebaseConfigured && db) {
                 try {
                     const docRef = doc(db, 'userSettings', user.id);
                     const docSnap = await getDoc(docRef);
@@ -45,7 +45,7 @@ export const useCurrency = () => {
     const updateCurrency = async (newCurrency: string) => {
         setCurrency(newCurrency);
         localStorage.setItem('currency', newCurrency);
-        if (user) {
+        if (user && isFirebaseConfigured && db) {
             try {
                 const docRef = doc(db, 'userSettings', user.id);
                 await setDoc(docRef, { currency: newCurrency }, { merge: true });
@@ -58,7 +58,7 @@ export const useCurrency = () => {
     const updateLocale = async (newLocale: string) => {
         setLocale(newLocale);
         localStorage.setItem('locale', newLocale);
-        if (user) {
+        if (user && isFirebaseConfigured && db) {
             try {
                 const docRef = doc(db, 'userSettings', user.id);
                 await setDoc(docRef, { locale: newLocale }, { merge: true });
@@ -74,7 +74,7 @@ export const useCurrency = () => {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
             }).format(amount);
-        } catch (e) {
+        } catch {
             return amount.toFixed(2);
         }
     };

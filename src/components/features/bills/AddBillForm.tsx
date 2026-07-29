@@ -1,77 +1,100 @@
-import { useState, FormEvent, useEffect } from 'react';
-import { BillFormData, Bill, BillCategory, BillFrequency, PaymentMethod } from '@/types';
+import { useState, useEffect } from 'react';
+import { Bill, BillCategory, BillStatus, BillFrequency, PaymentMethod } from '@/types';
 import { BILL_ICONS } from '@/utils/constants';
 import { BillIcon } from '@/components/ui/BillIcon';
 import { DatePicker } from '@/components/ui/DatePicker';
-import { PlusCircle, Repeat, X, Calendar, DollarSign, User, CreditCard, QrCode, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
+import { PlusCircle, FileText, DollarSign, ExternalLink, QrCode, Tag, Calendar, User } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface AddBillFormProps {
     isOpen: boolean;
     onClose: () => void;
     currency: string;
     onAddBill: (bill: Omit<Bill, 'id'>) => void;
-    onUpdateBill?: (id: string, bill: Bill) => void;
+    onUpdateBill?: (id: string, updatedBill: Bill) => void;
     billToEdit?: Bill | null;
-    onShowNotification: (title: string, message: string, type: 'success' | 'error') => void;
+    onShowNotification: (title: string, message: string, type: 'info' | 'success' | 'warning' | 'error') => void;
 }
 
-const ICONS_PER_PAGE = 18;
+const CATEGORIES: { value: BillCategory; label: string }[] = [
+    { value: 'utilities', label: 'Utilities' },
+    { value: 'rent', label: 'Rent & Housing' },
+    { value: 'insurance', label: 'Insurance' },
+    { value: 'subscription', label: 'Subscription' },
+    { value: 'internet', label: 'Internet & Phone' },
+    { value: 'credit-card', label: 'Credit Card' },
+    { value: 'loan', label: 'Loan & Debt' },
+    { value: 'other', label: 'Other' },
+];
 
-export const AddBillForm = ({ isOpen, onClose, currency, onAddBill, onUpdateBill, billToEdit, onShowNotification }: AddBillFormProps) => {
+const FREQUENCIES: { value: BillFrequency; label: string }[] = [
+    { value: 'one-time', label: 'One-time' },
+    { value: 'monthly', label: 'Monthly' },
+    { value: 'yearly', label: 'Yearly' },
+];
+
+const PAYMENT_METHODS: { value: PaymentMethod; label: string; icon: any }[] = [
+    { value: 'manual', label: 'Manual / Note', icon: FileText },
+    { value: 'url', label: 'Website Link', icon: ExternalLink },
+    { value: 'barcode', label: 'Barcode / QR Ref', icon: QrCode },
+];
+
+export const AddBillForm = ({
+    isOpen,
+    onClose,
+    currency,
+    onAddBill,
+    onUpdateBill,
+    billToEdit,
+    onShowNotification,
+}: AddBillFormProps) => {
     const isEditMode = !!billToEdit;
 
-    const [formData, setFormData] = useState<BillFormData>({
+    const [formData, setFormData] = useState({
         name: '',
         amount: '',
         dueDate: '',
-        category: 'utilities',
-        status: 'pending',
-        frequency: 'monthly',
+        category: 'utilities' as BillCategory,
+        status: 'pending' as BillStatus,
+        frequency: 'one-time' as BillFrequency,
         icon: 'FileText',
         paymentUrl: '',
-        paymentMethod: 'manual',
+        paymentMethod: 'manual' as PaymentMethod,
     });
 
-    const [iconPage, setIconPage] = useState(0);
-
-    // Reset or Populate form when modal opens
     useEffect(() => {
-        if (isOpen) {
-            if (billToEdit) {
-                setFormData({
-                    name: billToEdit.name,
-                    amount: billToEdit.amount?.toString() || '',
-                    dueDate: billToEdit.dueDate,
-                    category: billToEdit.category,
-                    status: billToEdit.status,
-                    frequency: billToEdit.frequency,
-                    icon: billToEdit.icon || 'FileText',
-                    paymentUrl: billToEdit.paymentUrl || '',
-                    paymentMethod: billToEdit.paymentMethod || 'manual',
-                });
-            } else {
-                setFormData({
-                    name: '',
-                    amount: '',
-                    dueDate: new Date().toISOString().split('T')[0],
-                    category: 'utilities',
-                    status: 'pending',
-                    frequency: 'monthly',
-                    icon: 'FileText',
-                    paymentUrl: '',
-                    paymentMethod: 'manual',
-                });
-            }
-            setIconPage(0);
+        if (billToEdit && isOpen) {
+            setFormData({
+                name: billToEdit.name || '',
+                amount: billToEdit.amount !== undefined ? billToEdit.amount.toString() : '',
+                dueDate: billToEdit.dueDate || '',
+                category: billToEdit.category || 'utilities',
+                status: billToEdit.status || 'pending',
+                frequency: billToEdit.frequency || 'one-time',
+                icon: billToEdit.icon || 'FileText',
+                paymentUrl: billToEdit.paymentUrl || '',
+                paymentMethod: billToEdit.paymentMethod || 'manual',
+            });
+        } else if (!isOpen) {
+            setFormData({
+                name: '',
+                amount: '',
+                dueDate: '',
+                category: 'utilities',
+                status: 'pending',
+                frequency: 'one-time',
+                icon: 'FileText',
+                paymentUrl: '',
+                paymentMethod: 'manual',
+            });
         }
-    }, [isOpen, billToEdit]);
+    }, [billToEdit, isOpen]);
 
-    if (!isOpen) return null;
-
-    const totalPages = Math.ceil(BILL_ICONS.length / ICONS_PER_PAGE);
-    const visibleIcons = BILL_ICONS.slice(iconPage * ICONS_PER_PAGE, (iconPage + 1) * ICONS_PER_PAGE);
-
-    const handleSubmit = (e: FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!formData.name || !formData.dueDate) {
@@ -80,27 +103,21 @@ export const AddBillForm = ({ isOpen, onClose, currency, onAddBill, onUpdateBill
         }
 
         if (isEditMode && billToEdit && onUpdateBill) {
-            // Update existing bill
             const updatedBill: Bill = {
                 ...billToEdit,
                 name: formData.name,
                 amount: formData.amount ? parseFloat(formData.amount) : undefined,
                 dueDate: formData.dueDate,
                 category: formData.category,
-                // Do not blindly overwrite status if we are just editing details, 
-                // UNLESS user wanted to reset it (maybe add a status picker later? for now keep existing status or use formData if we expose it)
-                // For now, let's trust formData which defaults to 'pending' for new, but we set it from billToEdit above.
                 status: formData.status,
                 frequency: formData.frequency,
                 icon: formData.icon,
                 paymentUrl: formData.paymentUrl,
                 paymentMethod: formData.paymentMethod,
             };
-
             onUpdateBill(billToEdit.id, updatedBill);
             onShowNotification('Success!', `Bill "${formData.name}" has been updated.`, 'success');
         } else {
-            // Add new bill
             const groupId = Date.now().toString();
             const newBill: Omit<Bill, 'id'> = {
                 groupId,
@@ -120,12 +137,11 @@ export const AddBillForm = ({ isOpen, onClose, currency, onAddBill, onUpdateBill
 
             let successMessage = `Bill "${formData.name}" has been added.`;
             if (formData.frequency !== 'one-time') {
-                successMessage += ` It will repeat ${formData.frequency}.`;
+                successMessage += ` Recurring (${formData.frequency}) cycle enabled.`;
             }
             onShowNotification('Success!', successMessage, 'success');
         }
 
-        // Reset form
         setFormData({
             name: '',
             amount: '',
@@ -137,289 +153,243 @@ export const AddBillForm = ({ isOpen, onClose, currency, onAddBill, onUpdateBill
             paymentUrl: '',
             paymentMethod: 'manual',
         });
-
         onClose();
     };
 
     return (
-        <div className="modal modal-open">
-            <div className="modal-box w-11/12 max-w-2xl">
-                <button onClick={onClose} className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
-                    <X className="w-5 h-5" />
-                </button>
+        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+            <DialogContent className="w-11/12 max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden rounded-3xl border-border/30 shadow-2xl">
+                {/* Fixed Sticky Header */}
+                <DialogHeader className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border/20 px-6 sm:px-8 py-5 flex flex-row items-center justify-between shrink-0 mb-0">
+                    <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+                        {isEditMode ? (
+                            <><FileText className="w-7 h-7 text-primary" /> Edit Bill</>
+                        ) : (
+                            <><PlusCircle className="w-7 h-7 text-primary" /> Add New Bill</>
+                        )}
+                    </DialogTitle>
+                </DialogHeader>
 
-                <h3 className="font-bold text-2xl mb-6 flex items-center gap-2">
-                    {isEditMode ? (
-                        <>
-                            <FileText className="w-8 h-8 text-primary" />
-                            Edit Bill
-                        </>
-                    ) : (
-                        <>
-                            <PlusCircle className="w-8 h-8 text-primary" />
-                            Add New Bill
-                        </>
-                    )}
-                </h3>
+                {/* Form Wrapper */}
+                <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+                    {/* Scrollable Form Fields */}
+                    <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6">
+                        {/* Section 1: Identity */}
+                        <div className="bg-muted/40 border border-border/20 p-5 rounded-2xl">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
+                                <User className="w-4 h-4" /> Identity &amp; Details
+                            </h4>
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="bill-name">Bill Name *</Label>
+                                        <Input
+                                            id="bill-name"
+                                            type="text"
+                                            name="name"
+                                            placeholder="e.g. Electric Utility"
+                                            value={formData.name}
+                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                            required
+                                        />
+                                    </div>
 
-                <div className="divider mt-0"></div>
-
-                <form onSubmit={handleSubmit} className="space-y-6">
-
-                    {/* Section 1: Identity (Name, Category, Icon) */}
-                    <div className="bg-base-200/50 p-4 rounded-xl">
-                        <h4 className="text-sm font-bold uppercase tracking-wider opacity-60 mb-4 flex items-center gap-2">
-                            <User className="w-4 h-4" /> Identity
-                        </h4>
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="form-control">
-                                    <label className="label" htmlFor="bill-name">
-                                        <span className="label-text font-semibold">Bill Name</span>
-                                    </label>
-                                    <input
-                                        id="bill-name"
-                                        type="text"
-                                        name="name"
-                                        placeholder="e.g., Electric Bill"
-                                        className="input input-bordered input-primary w-full"
-                                        value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        required
-                                        autoFocus
-                                    />
-                                </div>
-
-                                <div className="form-control">
-                                    <label className="label" htmlFor="bill-category">
-                                        <span className="label-text font-semibold">Category</span>
-                                    </label>
-                                    <select
-                                        id="bill-category"
-                                        name="category"
-                                        className="select select-bordered select-primary w-full"
-                                        value={formData.category}
-                                        onChange={(e) => setFormData({ ...formData, category: e.target.value as BillCategory })}
-                                    >
-                                        <option value="utilities">Utilities</option>
-                                        <option value="rent">Rent/Mortgage</option>
-                                        <option value="insurance">Insurance</option>
-                                        <option value="subscription">Subscription</option>
-                                        <option value="internet">Internet/Phone</option>
-                                        <option value="credit-card">Credit Card</option>
-                                        <option value="loan">Loan</option>
-                                        <option value="other">Other</option>
-                                    </select>
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="bill-amount">Amount ({currency})</Label>
+                                        <div className="relative">
+                                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                            <Input
+                                                id="bill-amount"
+                                                type="number"
+                                                name="amount"
+                                                step="0.01"
+                                                placeholder="0.00"
+                                                className="pl-9"
+                                                value={formData.amount}
+                                                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+                        </div>
 
-                            <div className="form-control">
-                                <label className="label">
-                                    <span className="label-text font-semibold">Select Icon</span>
-                                </label>
+                        {/* Section 2: Dates & Recurring */}
+                        <div className="bg-muted/40 border border-border/20 p-5 rounded-2xl">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
+                                <Calendar className="w-4 h-4" /> Schedule &amp; Frequency
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <DatePicker
+                                    label="Due Date *"
+                                    value={formData.dueDate}
+                                    onChange={(newDate) => setFormData({ ...formData, dueDate: newDate })}
+                                    required
+                                />
 
-                                <div className="grid grid-cols-6 sm:grid-cols-9 gap-2">
-                                    {visibleIcons.map((icon) => (
-                                        <button
-                                            key={icon.id}
-                                            type="button"
-                                            onClick={() => setFormData({ ...formData, icon: icon.id })}
-                                            className={`btn btn-square btn-sm ${formData.icon === icon.id ? 'btn-primary' : 'btn-ghost'} tool-tip`}
-                                            title={icon.label}
-                                        >
-                                            <BillIcon icon={icon.id} className="w-5 h-5" />
-                                        </button>
-                                    ))}
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="bill-frequency">Frequency</Label>
+                                    <Select
+                                        value={formData.frequency}
+                                        onValueChange={(val) => setFormData({ ...formData, frequency: val as BillFrequency })}
+                                    >
+                                        <SelectTrigger id="bill-frequency" className="h-11 rounded-xl">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {FREQUENCIES.map((freq) => (
+                                                <SelectItem key={freq.value} value={freq.value}>
+                                                    {freq.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Section 3: Category & Icon */}
+                        <div className="bg-muted/40 border border-border/20 p-5 rounded-2xl">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
+                                <Tag className="w-4 h-4" /> Categorization &amp; Icon
+                            </h4>
+                            <div className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="bill-category">Category</Label>
+                                    <Select
+                                        value={formData.category}
+                                        onValueChange={(val) => setFormData({ ...formData, category: val as BillCategory })}
+                                    >
+                                        <SelectTrigger id="bill-category" className="h-11 rounded-xl">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {CATEGORIES.map((cat) => (
+                                                <SelectItem key={cat.value} value={cat.value}>
+                                                    {cat.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
 
-                                {totalPages > 1 && (
-                                    <div className="flex justify-center mt-4">
-                                        <div className="join">
+                                <div className="space-y-1.5">
+                                    <Label>Select Icon</Label>
+                                    <div className="grid grid-cols-6 sm:grid-cols-9 gap-2 max-h-36 overflow-y-auto p-2 border border-input rounded-xl bg-background">
+                                        {BILL_ICONS.map((iconObj) => (
                                             <button
+                                                key={iconObj.id}
                                                 type="button"
-                                                className="join-item btn btn-sm disabled:bg-transparent disabled:border-transparent disabled:text-base-content/20"
-                                                disabled={iconPage === 0}
-                                                onClick={() => setIconPage(p => p - 1)}
+                                                onClick={() => setFormData({ ...formData, icon: iconObj.id })}
+                                                className={`p-2.5 rounded-xl flex flex-col items-center justify-center transition-all ${
+                                                    formData.icon === iconObj.id
+                                                        ? 'bg-primary text-primary-foreground shadow-md scale-105'
+                                                        : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                                                }`}
+                                                title={iconObj.label}
                                             >
-                                                <ChevronLeft className="w-4 h-4" />
+                                                <BillIcon icon={iconObj.id} className="w-5 h-5" />
                                             </button>
-                                            {Array.from({ length: totalPages }).map((_, i) => (
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Section 4: Payment Method */}
+                        <div className="bg-muted/40 border border-border/20 p-5 rounded-2xl">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
+                                <ExternalLink className="w-4 h-4" /> Payment Details
+                            </h4>
+                            <div className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="payment-method">Payment Method</Label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {PAYMENT_METHODS.map((method) => {
+                                            const IconComp = method.icon;
+                                            return (
                                                 <button
-                                                    key={i}
+                                                    key={method.value}
                                                     type="button"
-                                                    className={`join-item btn btn-sm ${iconPage === i ? 'btn-active' : ''}`}
-                                                    onClick={() => setIconPage(i)}
+                                                    onClick={() => setFormData({ ...formData, paymentMethod: method.value })}
+                                                    className={`p-3 rounded-xl border flex flex-col items-center gap-1.5 transition-all text-xs font-medium ${
+                                                        formData.paymentMethod === method.value
+                                                            ? 'border-primary bg-primary/10 text-primary font-bold shadow-xs'
+                                                            : 'border-input hover:bg-muted/50 text-muted-foreground'
+                                                    }`}
                                                 >
-                                                    {i + 1}
+                                                    <IconComp className="w-4 h-4" />
+                                                    {method.label}
                                                 </button>
-                                            ))}
-                                            <button
-                                                type="button"
-                                                className="join-item btn btn-sm disabled:bg-transparent disabled:border-transparent disabled:text-base-content/20"
-                                                disabled={iconPage === totalPages - 1}
-                                                onClick={() => setIconPage(p => p + 1)}
-                                            >
-                                                <ChevronRight className="w-4 h-4" />
-                                            </button>
-                                        </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {formData.paymentMethod === 'url' && (
+                                    <div className="space-y-1.5 animate-fade-in">
+                                        <Label htmlFor="payment-url">Payment Link / URL</Label>
+                                        <Input
+                                            id="payment-url"
+                                            type="url"
+                                            name="paymentUrl"
+                                            placeholder="https://..."
+                                            value={formData.paymentUrl}
+                                            onChange={(e) => setFormData({ ...formData, paymentUrl: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                )}
+
+                                {formData.paymentMethod === 'barcode' && (
+                                    <div className="space-y-1.5 animate-fade-in">
+                                        <Label htmlFor="payment-ref" className="flex items-center gap-2">
+                                            <QrCode className="w-4 h-4" /> Barcode / Reference No.
+                                        </Label>
+                                        <Input
+                                            id="payment-ref"
+                                            type="text"
+                                            name="paymentUrl"
+                                            placeholder="e.g. REF-12345678"
+                                            className="font-mono"
+                                            value={formData.paymentUrl}
+                                            onChange={(e) => setFormData({ ...formData, paymentUrl: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                )}
+
+                                {formData.paymentMethod === 'manual' && (
+                                    <div className="space-y-1.5 animate-fade-in">
+                                        <Label htmlFor="payment-detail" className="flex items-center gap-2">
+                                            <FileText className="w-4 h-4" /> Payment Details (Optional)
+                                        </Label>
+                                        <Input
+                                            id="payment-detail"
+                                            type="text"
+                                            name="paymentUrl"
+                                            placeholder="e.g. Bank Account: 123-456..."
+                                            value={formData.paymentUrl}
+                                            onChange={(e) => setFormData({ ...formData, paymentUrl: e.target.value })}
+                                        />
                                     </div>
                                 )}
                             </div>
                         </div>
                     </div>
 
-                    {/* Section 2: Schedule */}
-                    <div className="bg-base-200/50 p-4 rounded-xl">
-                        <h4 className="text-sm font-bold uppercase tracking-wider opacity-60 mb-4 flex items-center gap-2">
-                            <Calendar className="w-4 h-4" /> Schedule
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <DatePicker
-                                label="Next Due Date"
-                                value={formData.dueDate}
-                                onChange={(newDate) => setFormData({ ...formData, dueDate: newDate })}
-                                required
-                            />
-
-                            <div className="form-control">
-                                <label className="label" htmlFor="bill-frequency">
-                                    <span className="label-text font-semibold flex items-center gap-2">
-                                        <Repeat className="w-4 h-4" />
-                                        Repeat Interval
-                                    </span>
-                                </label>
-                                <select
-                                    id="bill-frequency"
-                                    name="frequency"
-                                    className="select select-bordered select-primary w-full"
-                                    value={formData.frequency}
-                                    onChange={(e) => setFormData({ ...formData, frequency: e.target.value as BillFrequency })}
-                                >
-                                    <option value="one-time">Never (One-time)</option>
-                                    <option value="monthly">Monthly</option>
-                                    <option value="yearly">Yearly</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Section 3: Amount */}
-                    <div className="bg-base-200/50 p-4 rounded-xl">
-                        <h4 className="text-sm font-bold uppercase tracking-wider opacity-60 mb-4 flex items-center gap-2">
-                            <DollarSign className="w-4 h-4" /> Amount
-                        </h4>
-                        <div className="form-control">
-                            <label className="label" htmlFor="bill-amount">
-                                <span className="label-text font-semibold">Amount Due ({currency})</span>
-                            </label>
-                            <input
-                                id="bill-amount"
-                                type="number"
-                                name="amount"
-                                placeholder="0.00"
-                                step="0.01"
-                                min="0"
-                                className="input input-bordered input-primary w-full text-lg"
-                                value={formData.amount}
-                                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Section 4: Payment Method */}
-                    <div className="bg-base-200/50 p-4 rounded-xl">
-                        <h4 className="text-sm font-bold uppercase tracking-wider opacity-60 mb-4 flex items-center gap-2">
-                            <CreditCard className="w-4 h-4" /> Payment
-                        </h4>
-                        <div className="space-y-4">
-                            <div className="form-control">
-                                <label className="label" htmlFor="payment-method">
-                                    <span className="label-text font-semibold">Payment Method</span>
-                                </label>
-                                <select
-                                    id="payment-method"
-                                    name="paymentMethod"
-                                    className="select select-bordered select-primary w-full"
-                                    value={formData.paymentMethod}
-                                    onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value as PaymentMethod })}
-                                >
-                                    <option value="url">Online Link / URL</option>
-                                    <option value="barcode">Barcode / Reference</option>
-                                    <option value="manual">Manual Pay (Cash/Card)</option>
-                                </select>
-                            </div>
-
-                            {formData.paymentMethod === 'url' && (
-                                <div className="form-control animate-fade-in">
-                                    <label className="label" htmlFor="payment-url">
-                                        <span className="label-text font-semibold">Payment Link / URL</span>
-                                    </label>
-                                    <input
-                                        id="payment-url"
-                                        type="url"
-                                        name="paymentUrl"
-                                        placeholder="https://..."
-                                        className="input input-bordered input-primary w-full"
-                                        value={formData.paymentUrl}
-                                        onChange={(e) => setFormData({ ...formData, paymentUrl: e.target.value })}
-                                        required
-                                    />
-                                </div>
-                            )}
-
-                            {formData.paymentMethod === 'barcode' && (
-                                <div className="form-control animate-fade-in">
-                                    <label className="label" htmlFor="payment-ref">
-                                        <span className="label-text font-semibold flex items-center gap-2">
-                                            <QrCode className="w-4 h-4" />
-                                            Barcode / Reference No.
-                                        </span>
-                                    </label>
-                                    <input
-                                        id="payment-ref"
-                                        type="text"
-                                        name="paymentUrl"
-                                        placeholder="e.g. REF-12345678"
-                                        className="input input-bordered input-primary w-full font-mono"
-                                        value={formData.paymentUrl}
-                                        onChange={(e) => setFormData({ ...formData, paymentUrl: e.target.value })}
-                                        required
-                                    />
-                                </div>
-                            )}
-
-                            {formData.paymentMethod === 'manual' && (
-                                <div className="form-control animate-fade-in">
-                                    <label className="label" htmlFor="payment-detail">
-                                        <span className="label-text font-semibold flex items-center gap-2">
-                                            <FileText className="w-4 h-4" />
-                                            Payment Details (Optional)
-                                        </span>
-                                    </label>
-                                    <input
-                                        id="payment-detail"
-                                        type="text"
-                                        name="paymentUrl"
-                                        placeholder="e.g. Bank Account: 123-456..."
-                                        className="input input-bordered input-primary w-full"
-                                        value={formData.paymentUrl}
-                                        onChange={(e) => setFormData({ ...formData, paymentUrl: e.target.value })}
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="modal-action border-t border-base-300 pt-6">
-                        <button type="button" onClick={onClose} className="btn btn-ghost">Cancel</button>
-                        <button type="submit" className="btn btn-primary px-8">
+                    {/* Fixed Sticky Footer for Action Buttons */}
+                    <div className="sticky bottom-0 z-20 bg-background/95 backdrop-blur-md border-t border-border/20 px-6 sm:px-8 py-4 flex justify-end gap-3 shrink-0">
+                        <Button type="button" variant="ghost" onClick={onClose} className="h-11 px-6 font-medium">
+                            Cancel
+                        </Button>
+                        <Button type="submit" className="h-11 px-8 font-bold text-sm rounded-xl shadow-md hover:scale-105 transition-all">
                             <PlusCircle className="w-5 h-5 mr-2" />
                             {isEditMode ? 'Update Bill' : 'Save Bill'}
-                        </button>
+                        </Button>
                     </div>
                 </form>
-            </div>
-            <div className="modal-backdrop" onClick={onClose}></div>
-        </div>
+            </DialogContent>
+        </Dialog>
     );
 };

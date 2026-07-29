@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 interface DatePickerProps {
     value: string;
@@ -13,7 +16,6 @@ export const DatePicker = ({ value, onChange, label = "Date", required = false }
     const [viewDate, setViewDate] = useState(new Date());
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // Initialize viewDate from value if valid, otherwise today
     useEffect(() => {
         if (value) {
             const date = new Date(value);
@@ -21,20 +23,16 @@ export const DatePicker = ({ value, onChange, label = "Date", required = false }
                 setViewDate(date);
             }
         }
-    }, []); // Only on mount or we might reset view when changing months if we added value to dep array? No.
+    }, []);
 
-    // Handle clicking outside to close
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
                 setShowCalendar(false);
             }
         };
-
         document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     const year = viewDate.getFullYear();
@@ -59,13 +57,10 @@ export const DatePicker = ({ value, onChange, label = "Date", required = false }
     };
 
     const handleDateClick = (day: number) => {
-        // Construct YYYY-MM-DD (local time)
         const date = new Date(year, month, day);
-        // We need manually formatted string to avoid timezone shifts
         const yearStr = date.getFullYear();
         const monthStr = String(date.getMonth() + 1).padStart(2, '0');
         const dayStr = String(date.getDate()).padStart(2, '0');
-
         onChange(`${yearStr}-${monthStr}-${dayStr}`);
         setShowCalendar(false);
     };
@@ -82,101 +77,81 @@ export const DatePicker = ({ value, onChange, label = "Date", required = false }
     };
 
     const days = [];
-    // Empty slots
     for (let i = 0; i < firstDay; i++) {
-        days.push(<div key={`empty-${i}`} className="invisible h-8 w-8"></div>);
+        days.push(<div key={`empty-${i}`} className="invisible h-8 w-8" />);
     }
 
-    // Days
     for (let day = 1; day <= daysInMonth; day++) {
         const selected = isSelected(day);
         const today = isToday(day);
-
-        let containerClass = "hover:bg-primary/20 hover:text-primary";
-        let textClass = "text-base-content";
-
-        if (selected) {
-            containerClass = "bg-primary text-primary-content shadow-md";
-            textClass = "text-primary-content font-bold";
-        } else if (today) {
-            containerClass = "border border-primary text-primary";
-            textClass = "font-bold";
-        }
 
         days.push(
             <div
                 key={day}
                 onClick={() => handleDateClick(day)}
-                className={`h-8 w-8 rounded-full flex items-center justify-center cursor-pointer transition-all duration-200 mx-auto text-sm ${containerClass}`}
+                className={cn(
+                    'h-8 w-8 rounded-full flex items-center justify-center cursor-pointer transition-all duration-200 mx-auto text-sm',
+                    selected && 'bg-primary text-primary-foreground shadow-md font-bold',
+                    !selected && today && 'border border-primary text-primary font-bold',
+                    !selected && !today && 'hover:bg-primary/20 hover:text-primary'
+                )}
             >
-                <span className={textClass}>{day}</span>
+                {day}
             </div>
         );
     }
 
     const formatDateDisplay = (dateStr: string) => {
         if (!dateStr) return '';
-        // Correctly handle timezone offset for display only if needed, but usually new Date("YYYY-MM-DD") is UTC
-        // But here we construct YYYY-MM-DD which is parsed as UTC in new Date(string).
-        // Actually new Date("2023-01-01") is UTC. new Date(2023, 0, 1) is Local.
-        // Let's just parse manually to be safe for display
         const [y, m, d] = dateStr.split('-').map(Number);
         const localDate = new Date(y, m - 1, d);
         return localDate.toLocaleDateString('default', { month: 'long', day: 'numeric', year: 'numeric' });
     };
 
     return (
-        <div className="form-control max-w-full relative" ref={containerRef}>
-            <label className="label">
-                <span className="label-text font-semibold">{label}</span>
-            </label>
+        <div className="max-w-full relative space-y-1.5" ref={containerRef}>
+            <Label>{label}</Label>
             <div
-                className={`input input-bordered input-primary w-full flex items-center justify-between cursor-pointer ${showCalendar ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+                className={cn(
+                    'flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm cursor-pointer',
+                    'ring-offset-background transition-colors',
+                    'hover:bg-muted/30',
+                    showCalendar && 'ring-2 ring-ring ring-offset-2'
+                )}
                 onClick={() => setShowCalendar(!showCalendar)}
             >
-                <span className={value ? 'text-base-content' : 'text-base-content/40'}>
+                <span className={value ? 'text-foreground' : 'text-muted-foreground'}>
                     {value ? formatDateDisplay(value) : 'Select date...'}
                 </span>
                 <CalendarIcon className="w-5 h-5 text-primary" />
             </div>
 
-            {/* Dropdown Calendar */}
             {showCalendar && (
-                <div className="absolute top-full left-0 mt-2 z-50 p-4 bg-base-100 rounded-xl shadow-xl border border-base-200 w-full min-w-[300px] animate-fade-in-up">
-                    {/* Header */}
+                <div className="absolute top-full left-0 mt-2 z-50 p-4 bg-popover rounded-xl shadow-xl border border-border w-full min-w-[300px] animate-fade-in-up">
                     <div className="flex justify-between items-center mb-4">
                         <span className="font-bold text-lg">
                             {viewDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
                         </span>
                         <div className="flex gap-1">
-                            <button onClick={prevMonth} type="button" className="btn btn-sm btn-ghost btn-circle">
+                            <Button onClick={prevMonth} type="button" size="icon" variant="ghost" className="h-8 w-8 rounded-full">
                                 <ChevronLeft className="w-4 h-4" />
-                            </button>
-                            <button onClick={nextMonth} type="button" className="btn btn-sm btn-ghost btn-circle">
+                            </Button>
+                            <Button onClick={nextMonth} type="button" size="icon" variant="ghost" className="h-8 w-8 rounded-full">
                                 <ChevronRight className="w-4 h-4" />
-                            </button>
+                            </Button>
                         </div>
                     </div>
 
-                    {/* Weekdays */}
-                    <div className="grid grid-cols-7 mb-2 text-center text-xs opacity-50 font-bold uppercase">
-                        <div>Su</div>
-                        <div>Mo</div>
-                        <div>Tu</div>
-                        <div>We</div>
-                        <div>Th</div>
-                        <div>Fr</div>
-                        <div>Sa</div>
+                    <div className="grid grid-cols-7 mb-2 text-center text-xs text-muted-foreground font-bold uppercase">
+                        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => <div key={d}>{d}</div>)}
                     </div>
 
-                    {/* Days Grid */}
                     <div className="grid grid-cols-7 gap-y-1 gap-x-1">
                         {days}
                     </div>
                 </div>
             )}
 
-            {/* Hidden Input for HTML5 form validation if needed, though we handle selection manually */}
             <input
                 type="text"
                 className="sr-only"

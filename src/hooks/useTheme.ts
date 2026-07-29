@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { db } from '@/lib/firebase';
+import { db, isFirebaseConfigured } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 export type Theme = 'light' | 'dark' | 'system';
@@ -13,7 +13,7 @@ export const useTheme = () => {
         const loadTheme = async () => {
             let savedTheme = localStorage.getItem('theme') as Theme;
 
-            if (user) {
+            if (user && isFirebaseConfigured && db) {
                 try {
                     const docRef = doc(db, 'userSettings', user.id);
                     const docSnap = await getDoc(docRef);
@@ -38,11 +38,12 @@ export const useTheme = () => {
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
         const applyTheme = (currentTheme: Theme) => {
+            const root = document.documentElement;
             if (currentTheme === 'system') {
-                const systemTheme = mediaQuery.matches ? 'dark' : 'light';
-                document.documentElement.setAttribute('data-theme', systemTheme);
+                const isDark = mediaQuery.matches;
+                root.classList.toggle('dark', isDark);
             } else {
-                document.documentElement.setAttribute('data-theme', currentTheme);
+                root.classList.toggle('dark', currentTheme === 'dark');
             }
         };
 
@@ -62,7 +63,7 @@ export const useTheme = () => {
     const toggleTheme = async (newTheme: Theme) => {
         setTheme(newTheme);
         localStorage.setItem('theme', newTheme);
-        if (user) {
+        if (user && isFirebaseConfigured && db) {
             try {
                 const docRef = doc(db, 'userSettings', user.id);
                 await setDoc(docRef, { theme: newTheme }, { merge: true });

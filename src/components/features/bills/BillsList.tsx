@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { Bill } from '@/types';
 import { BillRow } from './BillRow';
-import { AlertCircle, CalendarCheck, Calendar, Plus, Settings, ChevronDown, ChevronUp, Search, Filter } from 'lucide-react';
+import { AlertCircle, CalendarCheck, Calendar, Plus, ChevronDown, ChevronUp, Search, Filter } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 interface BillsListProps {
     bills: Bill[];
@@ -13,13 +17,14 @@ interface BillsListProps {
     onViewHistory: (bill: Bill) => void;
     onAddBill: () => void;
     onEdit: (bill: Bill) => void;
-    onOpenSettings: () => void;
 }
+
+const CATEGORIES = ['utilities', 'rent', 'insurance', 'subscription', 'internet', 'credit-card', 'loan', 'other'];
 
 export const BillsList = ({
     bills, currency, locale,
     onMarkAsPaid, onSkip, onDelete, onViewHistory,
-    onAddBill, onEdit, onOpenSettings
+    onAddBill, onEdit
 }: BillsListProps) => {
 
     const [showAllPaid, setShowAllPaid] = useState(false);
@@ -79,82 +84,83 @@ export const BillsList = ({
                 <div className="flex justify-between items-center">
                     <h2 className="text-2xl font-bold text-primary">Upcoming Bills</h2>
                     <div className="flex items-center gap-2">
-                        <button
+                        <Button
                             onClick={onAddBill}
-                            className="btn btn-primary btn-sm rounded-full px-4 shadow-md font-bold text-white transition-transform hover:scale-105"
+                            className="rounded-full h-10 px-5 shadow-md font-bold text-sm transition-transform hover:scale-105"
                         >
-                            <Plus className="w-4 h-4 mr-1" /> Add Bill
-                        </button>
-                        <button
-                            onClick={onOpenSettings}
-                            className="btn btn-circle btn-ghost btn-sm"
-                            title="Settings"
-                        >
-                            <Settings className="w-4 h-4" />
-                        </button>
+                            <Plus className="w-4 h-4 mr-1.5" /> Add Bill
+                        </Button>
                     </div>
                 </div>
 
                 <div className="flex gap-2">
                     <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-50" />
-                        <input
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
                             type="text"
                             placeholder="Search bills..."
-                            className="input input-sm input-bordered w-full pl-9 rounded-full bg-base-100/50 focus:bg-base-100 transition-colors"
+                            className="pl-9 rounded-full bg-card/50 focus:bg-card transition-colors h-9"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
-                    <div className="indicator">
+                    <div className="relative">
                         {filterCategory !== 'all' && (
-                            <span className="indicator-item badge badge-primary badge-xs border-2 border-base-100"></span>
+                            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-primary border-2 border-background z-10" />
                         )}
-                        <button
+                        <Button
                             onClick={() => setShowFilter(!showFilter)}
-                            className={`btn btn-sm btn-circle ${showFilter ? 'btn-primary text-white shadow-md' : 'btn-ghost bg-base-100/50'}`}
-                            title="Toggle Filter Categories"
+                            size="icon"
+                            variant={showFilter ? 'default' : 'ghost'}
+                            className="rounded-full h-10 w-10"
+                            title="Toggle Filter"
                         >
                             <Filter className="w-4 h-4" />
-                        </button>
+                        </Button>
                     </div>
                 </div>
 
                 {showFilter && (
-                    <div className="filter flex flex-wrap gap-1 animate-fade-in mt-1">
-                        <input
-                            type="radio"
-                            name="category-filter"
-                            className="btn btn-xs filter-reset"
-                            aria-label="All Categories"
-                            checked={filterCategory === 'all'}
-                            onChange={() => setFilterCategory('all')}
-                        />
-                        {['utilities', 'rent', 'insurance', 'subscription', 'internet', 'credit-card', 'loan', 'other'].map(cat => (
-                            <input
+                    <div className="flex flex-wrap gap-1.5 animate-fade-in mt-1">
+                        <button
+                            onClick={() => setFilterCategory('all')}
+                            className={cn(
+                                'text-xs px-3 py-1.5 rounded-full font-medium transition-all duration-200',
+                                filterCategory === 'all'
+                                    ? 'bg-primary text-primary-foreground shadow-sm'
+                                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                            )}
+                        >
+                            All
+                        </button>
+                        {CATEGORIES.map(cat => (
+                            <button
                                 key={cat}
-                                type="radio"
-                                name="category-filter"
-                                className="btn btn-xs"
-                                aria-label={cat.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                                checked={filterCategory === cat}
-                                onChange={() => setFilterCategory(cat)}
-                            />
+                                onClick={() => setFilterCategory(cat)}
+                                className={cn(
+                                    'text-xs px-3 py-1.5 rounded-full font-medium capitalize transition-all duration-200',
+                                    filterCategory === cat
+                                        ? 'bg-primary text-primary-foreground shadow-sm'
+                                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                )}
+                            >
+                                {cat.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                            </button>
                         ))}
                     </div>
                 )}
             </div>
 
             {bills.length === 0 ? (
-                <div className="py-12 text-center opacity-50">
+                <div className="py-12 text-center text-muted-foreground">
                     <h2 className="text-xl font-bold mb-4">No Bills Yet</h2>
                     <p className="mb-4 text-sm">Add your first bill to get started.</p>
                 </div>
             ) : (
                 <>
                     {activeBills.length === 0 && !searchQuery && filterCategory === 'all' && (
-                        <div className="py-8 text-center opacity-60">
-                            <CalendarCheck className="w-12 h-12 mx-auto mb-3 text-success" />
+                        <div className="py-8 text-center text-muted-foreground">
+                            <CalendarCheck className="w-12 h-12 mx-auto mb-3 text-[color:var(--success)]" />
                             <h3 className="text-xl font-bold mb-1">All Caught Up!</h3>
                             <p className="text-sm">No pending bills matching your criteria.</p>
                         </div>
@@ -162,9 +168,11 @@ export const BillsList = ({
 
                     {shouldShow('overdue') && (
                         <div className="space-y-3">
-                            <h3 className="text-lg font-bold text-error flex items-center gap-2 mb-4">
+                            <h3 className="text-lg font-bold text-destructive flex items-center gap-2 mb-4">
                                 <AlertCircle className="w-5 h-5" /> Overdue
-                                <span className={`badge badge-sm text-white ${buckets.overdue.length > 0 ? 'badge-error' : 'badge-ghost opacity-50'}`}>{buckets.overdue.length}</span>
+                                <Badge variant="destructive" className="text-xs">
+                                    {buckets.overdue.length}
+                                </Badge>
                             </h3>
                             <div className="space-y-2">
                                 {buckets.overdue.length > 0 ? buckets.overdue.map(bill => (
@@ -180,7 +188,7 @@ export const BillsList = ({
                                         onEdit={onEdit}
                                     />
                                 )) : (
-                                    <div className="text-sm opacity-30 italic px-2">No matching overdue bills</div>
+                                    <div className="text-sm text-muted-foreground italic px-2">No matching overdue bills</div>
                                 )}
                             </div>
                         </div>
@@ -190,7 +198,9 @@ export const BillsList = ({
                         <div className="space-y-3">
                             <h3 className="text-lg font-bold text-primary flex items-center gap-2 mb-4">
                                 <Calendar className="w-5 h-5" /> This week
-                                <span className={`badge badge-sm ${buckets.thisWeek.length > 0 ? 'badge-primary' : 'badge-ghost opacity-50 hidden'}`}>{buckets.thisWeek.length}</span>
+                                {buckets.thisWeek.length > 0 && (
+                                    <Badge className="text-xs">{buckets.thisWeek.length}</Badge>
+                                )}
                             </h3>
                             <div className="space-y-2">
                                 {buckets.thisWeek.length > 0 ? buckets.thisWeek.map(bill => (
@@ -206,7 +216,7 @@ export const BillsList = ({
                                         onEdit={onEdit}
                                     />
                                 )) : (
-                                    <div className="text-sm opacity-30 italic px-2">No matching bills this week</div>
+                                    <div className="text-sm text-muted-foreground italic px-2">No matching bills this week</div>
                                 )}
                             </div>
                         </div>
@@ -214,9 +224,11 @@ export const BillsList = ({
 
                     {shouldShow('laterThisMonth') && (
                         <div className="space-y-3">
-                            <h3 className="text-lg font-bold opacity-60 flex items-center gap-2 mb-4">
+                            <h3 className="text-lg font-bold text-muted-foreground flex items-center gap-2 mb-4">
                                 <CalendarCheck className="w-5 h-5" /> Later this month
-                                <span className={`badge badge-sm ${buckets.laterThisMonth.length > 0 ? 'badge-ghost' : 'badge-ghost opacity-30 hidden'}`}>{buckets.laterThisMonth.length}</span>
+                                {buckets.laterThisMonth.length > 0 && (
+                                    <Badge variant="secondary" className="text-xs">{buckets.laterThisMonth.length}</Badge>
+                                )}
                             </h3>
                             <div className="space-y-2">
                                 {buckets.laterThisMonth.length > 0 ? buckets.laterThisMonth.map(bill => (
@@ -232,7 +244,7 @@ export const BillsList = ({
                                         onEdit={onEdit}
                                     />
                                 )) : (
-                                    <div className="text-sm opacity-30 italic px-2">No matching bills later this month</div>
+                                    <div className="text-sm text-muted-foreground italic px-2">No matching bills later this month</div>
                                 )}
                             </div>
                         </div>
@@ -240,9 +252,11 @@ export const BillsList = ({
 
                     {shouldShow('upcomingMonth') && (
                         <div className="space-y-3">
-                            <h3 className="text-lg font-bold opacity-60 flex items-center gap-2 mb-4">
+                            <h3 className="text-lg font-bold text-muted-foreground flex items-center gap-2 mb-4">
                                 <CalendarCheck className="w-5 h-5" /> Upcoming month
-                                <span className={`badge badge-sm ${buckets.upcomingMonth.length > 0 ? 'badge-ghost' : 'badge-ghost opacity-30 hidden'}`}>{buckets.upcomingMonth.length}</span>
+                                {buckets.upcomingMonth.length > 0 && (
+                                    <Badge variant="secondary" className="text-xs">{buckets.upcomingMonth.length}</Badge>
+                                )}
                             </h3>
                             <div className="space-y-2">
                                 {buckets.upcomingMonth.length > 0 ? buckets.upcomingMonth.map(bill => (
@@ -258,7 +272,7 @@ export const BillsList = ({
                                         onEdit={onEdit}
                                     />
                                 )) : (
-                                    <div className="text-sm opacity-30 italic px-2">No matching bills upcoming month</div>
+                                    <div className="text-sm text-muted-foreground italic px-2">No matching bills upcoming month</div>
                                 )}
                             </div>
                         </div>
@@ -266,21 +280,21 @@ export const BillsList = ({
 
                     {/* Display paid one-time bills */}
                     {filteredBills.filter(b => b.status === 'paid' && b.frequency === 'one-time').length > 0 && (
-                        <div className="space-y-3 pt-6 border-t border-base-200">
+                        <div className="space-y-3 pt-6 border-t border-border">
                             <button
                                 onClick={() => setShowAllPaid(!showAllPaid)}
                                 className="flex items-center justify-between w-full text-left group"
                             >
-                                <h3 className="text-lg font-bold opacity-40 group-hover:opacity-60 transition-opacity flex items-center gap-2">
+                                <h3 className="text-lg font-bold text-muted-foreground group-hover:text-foreground transition-colors flex items-center gap-2">
                                     <CalendarCheck className="w-5 h-5" /> All Paid
-                                    <span className="badge badge-ghost badge-sm">
+                                    <Badge variant="outline" className="text-xs">
                                         {filteredBills.filter(b => b.status === 'paid' && b.frequency === 'one-time').length}
-                                    </span>
+                                    </Badge>
                                 </h3>
                                 {showAllPaid ? (
-                                    <ChevronDown className="w-5 h-5 opacity-40 group-hover:opacity-60 transition-opacity" />
+                                    <ChevronDown className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
                                 ) : (
-                                    <ChevronUp className="w-5 h-5 opacity-40 group-hover:opacity-60 transition-opacity" />
+                                    <ChevronUp className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
                                 )}
                             </button>
 

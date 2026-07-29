@@ -1,8 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Bill } from '@/types';
-import { X, DollarSign, FileText, CheckCircle, ExternalLink, QrCode } from 'lucide-react';
+import { DollarSign, FileText, CheckCircle, ExternalLink, QrCode } from 'lucide-react';
 import { DatePicker } from '@/components/ui/DatePicker';
 import Barcode from 'react-barcode';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
 
 interface PayBillModalProps {
     bill: Bill | null;
@@ -23,12 +29,11 @@ export const PayBillModal = ({ bill, isOpen, onClose, currency, onConfirmPayment
             setDate(new Date().toISOString().split('T')[0]);
             setAmount(bill.amount?.toString() || '');
             setNote('');
-            // Default to true only if it's a recurring bill
             setCreateNextBill(true);
         }
     }, [bill, isOpen]);
 
-    if (!isOpen || !bill) return null;
+    if (!bill) return null;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -41,37 +46,30 @@ export const PayBillModal = ({ bill, isOpen, onClose, currency, onConfirmPayment
     };
 
     return (
-        <div className="modal modal-open">
-            <div className="modal-box w-11/12 max-w-lg">
-                <button onClick={onClose} className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
-                    <X className="w-5 h-5" />
-                </button>
+        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+            <DialogContent className="w-11/12 sm:max-w-xl p-6 sm:p-8">
+                <DialogHeader>
+                    <DialogTitle className="text-2xl flex items-center gap-2">
+                        <CheckCircle className="w-7 h-7 text-[color:var(--success)]" />
+                        Log Payment
+                    </DialogTitle>
+                </DialogHeader>
 
-                <h3 className="font-bold text-2xl mb-6 flex items-center gap-2">
-                    <CheckCircle className="w-8 h-8 text-success" />
-                    Log Payment
-                </h3>
-
-                <div className="divider mt-0"></div>
+                <Separator className="my-1" />
 
                 {/* Payment Method Display */}
                 {bill.paymentMethod === 'url' && bill.paymentUrl && (
-                    <div className="bg-base-200 p-4 rounded-xl mb-6 flex flex-col items-center text-center animate-fade-in">
+                    <div className="bg-muted p-4 rounded-xl flex flex-col items-center text-center animate-fade-in">
                         <p className="font-semibold mb-2">Pay via Online Portal</p>
-                        <a
-                            href={bill.paymentUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn btn-primary btn-outline gap-2"
-                        >
-                            <ExternalLink className="w-4 h-4" />
+                        <Button variant="outline" onClick={() => window.open(bill.paymentUrl, '_blank', 'noopener,noreferrer')}>
+                            <ExternalLink className="w-4 h-4 mr-2" />
                             Open Payment Link
-                        </a>
+                        </Button>
                     </div>
                 )}
 
                 {bill.paymentMethod === 'barcode' && bill.paymentUrl && (
-                    <div className="bg-white text-black p-4 rounded-xl mb-6 flex flex-col items-center justify-center animate-fade-in border-2 border-base-300">
+                    <div className="bg-white text-black p-4 rounded-xl flex flex-col items-center justify-center animate-fade-in border-2 border-border">
                         <p className="font-semibold text-gray-500 mb-2 flex items-center gap-2">
                             <QrCode className="w-4 h-4" />
                             Scan to Pay
@@ -83,15 +81,15 @@ export const PayBillModal = ({ bill, isOpen, onClose, currency, onConfirmPayment
                 )}
 
                 {bill.paymentMethod === 'manual' && bill.paymentUrl && (
-                    <div className="bg-base-200 p-4 rounded-xl mb-6 flex flex-col items-center text-center animate-fade-in">
+                    <div className="bg-muted p-4 rounded-xl flex flex-col items-center text-center animate-fade-in">
                         <p className="font-semibold mb-1 flex items-center gap-2">
                             <FileText className="w-4 h-4" /> Payment Details
                         </p>
-                        <p className="text-sm opacity-80 break-all">{bill.paymentUrl}</p>
+                        <p className="text-sm text-muted-foreground break-all">{bill.paymentUrl}</p>
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-5">
                     <DatePicker
                         label="Date Paid"
                         value={date}
@@ -99,62 +97,60 @@ export const PayBillModal = ({ bill, isOpen, onClose, currency, onConfirmPayment
                         required
                     />
 
-                    <div className="form-control">
-                        <label className="label">
-                            <span className="label-text font-semibold flex items-center gap-2">
-                                <DollarSign className="w-4 h-4" /> Amount Paid ({currency})
-                            </span>
-                        </label>
-                        <input
+                    <div className="space-y-1.5">
+                        <Label htmlFor="pay-amount" className="flex items-center gap-2">
+                            <DollarSign className="w-4 h-4" /> Amount Paid ({currency})
+                        </Label>
+                        <Input
+                            id="pay-amount"
                             type="number"
                             required
                             step="0.01"
-                            className="input input-bordered w-full"
                             value={amount}
                             onChange={(e) => setAmount(e.target.value)}
                         />
                     </div>
 
-                    <div className="form-control">
-                        <label className="label">
-                            <span className="label-text font-semibold flex items-center gap-2">
-                                <FileText className="w-4 h-4" /> Note (Optional)
-                            </span>
-                        </label>
+                    <div className="space-y-1.5">
+                        <Label htmlFor="pay-note" className="flex items-center gap-2">
+                            <FileText className="w-4 h-4" /> Note (Optional)
+                        </Label>
                         <textarea
-                            className="textarea textarea-bordered h-24"
+                            id="pay-note"
+                            className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
                             placeholder="e.g. Paid via Bank Transfer..."
                             value={note}
                             onChange={(e) => setNote(e.target.value)}
-                        ></textarea>
+                        />
                     </div>
 
                     {bill.frequency !== 'one-time' && (
-                        <div className="form-control bg-base-200/50 p-3 rounded-xl">
-                            <label className="label cursor-pointer justify-start gap-4">
-                                <input
-                                    type="checkbox"
-                                    className="checkbox checkbox-primary"
-                                    checked={createNextBill}
-                                    onChange={(e) => setCreateNextBill(e.target.checked)}
-                                />
-                                <div className="flex flex-col">
-                                    <span className="label-text font-semibold">Update Due Date</span>
-                                    <span className="label-text-alt text-base-content/60">Uncheck to log payment but keep bill pending (e.g. partial payment)</span>
-                                </div>
-                            </label>
+                        <div className="flex items-center justify-between p-4 bg-muted/40 border border-border/20 rounded-2xl gap-4">
+                            <div className="flex flex-col">
+                                <label htmlFor="create-next" className="text-sm font-semibold cursor-pointer">Update Due Date</label>
+                                <span className="text-xs text-muted-foreground mt-0.5">Toggle off to log payment without scheduling next billing cycle</span>
+                            </div>
+                            <Switch
+                                id="create-next"
+                                checked={createNextBill}
+                                onCheckedChange={(checked) => setCreateNextBill(!!checked)}
+                            />
                         </div>
                     )}
 
-                    <div className="modal-action">
-                        <button type="button" onClick={onClose} className="btn btn-ghost">Cancel</button>
-                        <button type="submit" className="btn btn-success text-white px-8">
+                    <div className="flex justify-end gap-3 pt-2">
+                        <Button type="button" variant="ghost" onClick={onClose} className="h-11 px-6 font-medium">
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            className="h-11 px-8 font-bold text-sm rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:scale-105 transition-all"
+                        >
                             Confirm Payment
-                        </button>
+                        </Button>
                     </div>
                 </form>
-            </div>
-            <div className="modal-backdrop" onClick={onClose}></div>
-        </div>
+            </DialogContent>
+        </Dialog>
     );
 };

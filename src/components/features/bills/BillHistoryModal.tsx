@@ -1,6 +1,9 @@
 import { Bill } from '@/types';
-import { X, History, CheckCircle, FastForward, Edit2, Trash2 } from 'lucide-react';
+import { History, CheckCircle, FastForward, Edit2, Trash2 } from 'lucide-react';
 import { formatDate } from '@/utils/billUtils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 interface BillHistoryModalProps {
     isOpen: boolean;
@@ -14,18 +17,14 @@ interface BillHistoryModalProps {
 }
 
 export const BillHistoryModal = ({ isOpen, onClose, currentBill, allBills, currency, locale, onEdit, onDelete }: BillHistoryModalProps) => {
-    if (!isOpen || !currentBill) return null;
+    if (!currentBill) return null;
 
-    // Find history: same groupId, or same name if groupId missing (legacy)
-    // Filter for paid/skipped
     const history = allBills.filter(b => {
         const isMatch = currentBill.groupId
             ? b.groupId === currentBill.groupId
-            : b.name === currentBill.name; // Fallback for legacy
-
-        // Exclude the current viewing bill itself if it's in the list (though mostly we filter for paid/skipped)
+            : b.name === currentBill.name;
         return isMatch && (b.status === 'paid' || b.status === 'skipped');
-    }).sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()); // Newest first
+    }).sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
 
     const formatAmount = (amount: number) => {
         try {
@@ -34,38 +33,40 @@ export const BillHistoryModal = ({ isOpen, onClose, currentBill, allBills, curre
     };
 
     return (
-        <div className="modal modal-open">
-            <div className="modal-box">
-                <button onClick={onClose} className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
-                    <X className="w-5 h-5" />
-                </button>
-
-                <h3 className="font-bold text-2xl mb-6 flex items-center gap-2">
-                    <History className="w-6 h-6 text-primary" />
-                    Payment History
-                </h3>
-                <p className="opacity-70 mb-4">History for <span className="font-bold">{currentBill.name}</span></p>
+        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+            <DialogContent className="w-11/12 sm:max-w-xl p-6 sm:p-8">
+                <DialogHeader>
+                    <DialogTitle className="text-2xl flex items-center gap-2">
+                        <History className="w-6 h-6 text-primary" />
+                        Payment History
+                    </DialogTitle>
+                </DialogHeader>
+                <p className="text-muted-foreground">
+                    History for <span className="font-bold text-foreground">{currentBill.name}</span>
+                </p>
 
                 {history.length === 0 ? (
-                    <div className="py-8 text-center opacity-50">
+                    <div className="py-8 text-center text-muted-foreground">
                         <p>No payment history found.</p>
                     </div>
                 ) : (
                     <div className="space-y-4 max-h-[60vh] overflow-y-auto">
                         {history.map(record => (
-                            <div key={record.id} className="flex items-center justify-between p-3 bg-base-200 rounded-xl">
+                            <div key={record.id} className="flex items-center justify-between p-3 bg-muted rounded-xl">
                                 <div className="flex items-center gap-3">
                                     {record.status === 'paid' ? (
-                                        <CheckCircle className="w-5 h-5 text-success" />
+                                        <CheckCircle className="w-5 h-5 text-[color:var(--success)]" />
                                     ) : (
-                                        <FastForward className="w-5 h-5 text-base-content/50" />
+                                        <FastForward className="w-5 h-5 text-muted-foreground" />
                                     )}
                                     <div>
                                         <div className="font-semibold flex items-center gap-2">
                                             {formatDate(record.dueDate)}
-                                            {record.status === 'skipped' && <span className="badge badge-xs badge-ghost">Skipped</span>}
+                                            {record.status === 'skipped' && (
+                                                <Badge variant="outline" className="text-[10px]">Skipped</Badge>
+                                            )}
                                         </div>
-                                        <div className="text-xs opacity-60">
+                                        <div className="text-xs text-muted-foreground">
                                             {record.paidDate ? `Paid on ${formatDate(record.paidDate)}` : 'Skipped'}
                                         </div>
                                     </div>
@@ -73,34 +74,45 @@ export const BillHistoryModal = ({ isOpen, onClose, currentBill, allBills, curre
                                 <div className="text-right">
                                     <div className="font-bold">
                                         {record.status === 'paid' ? (
-                                            <span className="text-success">{currency}{formatAmount(record.paidAmount || record.amount || 0)}</span>
+                                            <span className="text-[color:var(--success)]">
+                                                {currency}{formatAmount(record.paidAmount || record.amount || 0)}
+                                            </span>
                                         ) : (
-                                            <span className="opacity-50 line-through">{currency}{formatAmount(record.amount || 0)}</span>
+                                            <span className="text-muted-foreground line-through">
+                                                {currency}{formatAmount(record.amount || 0)}
+                                            </span>
                                         )}
                                     </div>
-                                    <div className="flex justify-end gap-2 mt-1">
-                                        <button onClick={() => onEdit(record)} className="btn btn-xs btn-ghost btn-circle text-primary" title="Edit">
-                                            <Edit2 className="w-3 h-3" />
-                                        </button>
-                                        <button
+                                    <div className="flex justify-end gap-1 mt-1">
+                                        <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-8 w-8 rounded-full text-primary hover:bg-primary/10"
+                                            onClick={() => onEdit(record)}
+                                            title="Edit"
+                                        >
+                                            <Edit2 className="w-4 h-4" />
+                                        </Button>
+                                        <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-8 w-8 rounded-full text-destructive hover:bg-destructive/10"
                                             onClick={() => {
                                                 if (window.confirm('Are you sure you want to delete this transaction record?')) {
                                                     onDelete(record.id);
                                                 }
                                             }}
-                                            className="btn btn-xs btn-ghost btn-circle text-error"
                                             title="Delete"
                                         >
-                                            <Trash2 className="w-3 h-3" />
-                                        </button>
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
                                     </div>
                                 </div>
                             </div>
                         ))}
                     </div>
                 )}
-            </div>
-            <div className="modal-backdrop" onClick={onClose}></div>
-        </div>
+            </DialogContent>
+        </Dialog>
     );
 };

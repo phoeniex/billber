@@ -1,7 +1,11 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { Bill } from '@/types';
-import { X, Save, Edit2 } from 'lucide-react';
+import { Save, Edit2 } from 'lucide-react';
 import { DatePicker } from '@/components/ui/DatePicker';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface EditTransactionModalProps {
     isOpen: boolean;
@@ -36,7 +40,7 @@ export const EditTransactionModal = ({
         }
     }, [isOpen, transaction]);
 
-    if (!isOpen || !transaction) return null;
+    if (!transaction) return null;
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
@@ -70,35 +74,34 @@ export const EditTransactionModal = ({
     };
 
     return (
-        <div className="modal modal-open">
-            <div className="modal-box max-w-lg">
-                <button onClick={onClose} className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
-                    <X className="w-5 h-5" />
-                </button>
+        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+            <DialogContent className="max-w-lg">
+                <DialogHeader>
+                    <DialogTitle className="text-2xl flex items-center gap-2">
+                        <Save className="w-6 h-6 text-primary" />
+                        Edit Transaction
+                    </DialogTitle>
+                </DialogHeader>
 
-                <h3 className="font-bold text-2xl mb-6 flex items-center gap-2">
-                    <Save className="w-6 h-6 text-primary" />
-                    Edit Transaction
-                </h3>
-
-                <div className="mb-4 p-3 bg-base-200 rounded-lg flex items-center justify-between">
+                <div className="p-3 bg-muted rounded-lg flex items-center justify-between">
                     <div>
-                        <div className="text-sm opacity-60">Bill Name</div>
+                        <div className="text-sm text-muted-foreground">Bill Name</div>
                         <div className="font-bold text-lg">{transaction.name}</div>
                     </div>
                     {onEditBill && (
-                        <button
+                        <Button
                             type="button"
+                            size="sm"
+                            variant="ghost"
                             onClick={() => {
                                 onEditBill(transaction);
                                 onClose();
                             }}
-                            className="btn btn-sm btn-ghost gap-2"
                             title="Edit the parent bill"
                         >
-                            <Edit2 className="w-4 h-4" />
+                            <Edit2 className="w-4 h-4 mr-2" />
                             Edit Bill
-                        </button>
+                        </Button>
                     )}
                 </div>
 
@@ -119,31 +122,27 @@ export const EditTransactionModal = ({
                         />
                     )}
 
-                    <div className="form-control">
-                        <label className="label" htmlFor="paid-amount">
-                            <span className="label-text font-semibold">
-                                {transaction.status === 'paid' ? 'Paid Amount' : 'Amount'} ({currency})
-                            </span>
-                        </label>
-                        <input
+                    <div className="space-y-1.5">
+                        <Label htmlFor="paid-amount">
+                            {transaction.status === 'paid' ? 'Paid Amount' : 'Amount'} ({currency})
+                        </Label>
+                        <Input
                             id="paid-amount"
                             type="number"
                             step="0.01"
                             min="0"
-                            className="input input-bordered input-primary w-full text-lg"
+                            className="text-lg"
                             value={paidAmount}
                             onChange={(e) => setPaidAmount(e.target.value)}
                             required
                         />
                     </div>
 
-                    <div className="form-control">
-                        <label className="label" htmlFor="note">
-                            <span className="label-text font-semibold">Note (Optional)</span>
-                        </label>
+                    <div className="space-y-1.5">
+                        <Label htmlFor="note">Note (Optional)</Label>
                         <textarea
                             id="note"
-                            className="textarea textarea-bordered textarea-primary w-full"
+                            className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
                             rows={3}
                             placeholder="Add a note about this transaction..."
                             value={note}
@@ -151,18 +150,15 @@ export const EditTransactionModal = ({
                         />
                     </div>
 
-                    <div className="modal-action border-t border-base-300 pt-4">
-                        <button type="button" onClick={onClose} className="btn btn-ghost">
-                            Cancel
-                        </button>
-                        <button type="submit" className="btn btn-primary px-8">
+                    <div className="flex justify-end gap-3 border-t border-border/30 pt-4">
+                        <Button type="button" variant="ghost" onClick={onClose} className="h-11 px-6 font-medium">Cancel</Button>
+                        <Button type="submit" className="h-11 px-8 font-bold text-sm rounded-xl shadow-md hover:scale-105 transition-all">
                             <Save className="w-5 h-5 mr-2" />
                             Save Changes
-                        </button>
+                        </Button>
                     </div>
                 </form>
-            </div>
-            <div className="modal-backdrop" onClick={onClose}></div>
-        </div>
+            </DialogContent>
+        </Dialog>
     );
 };
