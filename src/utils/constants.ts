@@ -37,6 +37,16 @@ export const DUE_SOON_OPTIONS = [
     { value: 30, label: '1 Month' },
 ];
 
+export const INCOME_CATEGORIES = [
+    { value: 'salary', label: 'Salary & Wage', icon: 'Briefcase' },
+    { value: 'freelance', label: 'Freelance & Side Gig', icon: 'Laptop' },
+    { value: 'investment', label: 'Investment & Dividends', icon: 'TrendingUp' },
+    { value: 'business', label: 'Business Income', icon: 'Landmark' },
+    { value: 'gift', label: 'Gift & Bonus', icon: 'Gift' },
+    { value: 'refund', label: 'Refund & Cash Back', icon: 'Coins' },
+    { value: 'other', label: 'Other Income', icon: 'Banknote' },
+];
+
 export const BILL_ICONS = [
     // Utilities & Home
     { id: 'Zap', label: 'Electric' },
@@ -54,65 +64,32 @@ export const BILL_ICONS = [
     { id: 'Gamepad2', label: 'Gaming' },
     { id: 'Cloud', label: 'Storage' },
 
-    // Finance & Services
+    // Finance & Income
+    { id: 'Briefcase', label: 'Salary' },
+    { id: 'Laptop', label: 'Freelance' },
+    { id: 'TrendingUp', label: 'Investment' },
+    { id: 'Landmark', label: 'Business' },
+    { id: 'Gift', label: 'Bonus' },
+    { id: 'Coins', label: 'Refund' },
+    { id: 'Banknote', label: 'Cash In' },
     { id: 'CreditCard', label: 'Card' },
     { id: 'Shield', label: 'Insurance' },
-    { id: 'Lock', label: 'Security' },
-    { id: 'Wrench', label: 'Service' },
-    { id: 'Briefcase', label: 'Business' },
-    { id: 'Landmark', label: 'Tax/Bank' },
 
-    // Transport
+    // Transport & Auto
     { id: 'Car', label: 'Car' },
     { id: 'Bus', label: 'Bus' },
     { id: 'Train', label: 'Train' },
-    { id: 'Bike', label: 'Bike' },
     { id: 'Plane', label: 'Travel' },
-    { id: 'Map', label: 'Trip' },
+    { id: 'Fuel', label: 'Gas' },
 
-    // Health & Lifestyle
+    // Lifestyle & Shopping
     { id: 'Heart', label: 'Health' },
     { id: 'Dumbbell', label: 'Gym' },
-    { id: 'Stethoscope', label: 'Medical' },
-    { id: 'Utensils', label: 'Food' },
+    { id: 'Utensils', label: 'Food font' },
     { id: 'Coffee', label: 'Cafe' },
     { id: 'ShoppingBag', label: 'Shopping' },
-
-    // Education & Kids
-    { id: 'Book', label: 'Education' },
-    { id: 'GraduationCap', label: 'Tuition' },
-    { id: 'Baby', label: 'Childcare' },
-    { id: 'Palette', label: 'Hobbies' },
-
-    // Clothing & Gifts
-    { id: 'Shirt', label: 'Clothing' },
-    { id: 'Watch', label: 'Luxury' },
-    { id: 'Gift', label: 'Gift' },
-    { id: 'Scissors', label: 'Salon' },
 
     // General
     { id: 'FileText', label: 'General' },
     { id: 'Tag', label: 'Other' },
-
-    // Home & Living
-    { id: 'PawPrint', label: 'Pets' },
-    { id: 'Hammer', label: 'Repair' },
-    { id: 'Sofa', label: 'Furniture' },
-    { id: 'Leaf', label: 'Garden' },
-
-    // Transport & Auto
-    { id: 'Fuel', label: 'Gas' },
-    { id: 'Truck', label: 'Delivery' },
-    { id: 'Package', label: 'Shipping' },
-
-    // Finance & Office
-    { id: 'Coins', label: 'Savings' },
-    { id: 'Banknote', label: 'Cash' },
-    { id: 'Wallet', label: 'Personal' },
-    { id: 'Printer', label: 'Office' },
-    { id: 'Plug', label: 'Electronics' },
-
-    // Entertainment
-    { id: 'Ticket', label: 'Events' },
-    { id: 'Film', label: 'Movies' },
 ];

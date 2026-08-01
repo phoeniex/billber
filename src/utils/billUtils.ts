@@ -1,8 +1,14 @@
 import { Bill, DashboardStats } from '@/types';
 
 export const calculateStats = (bills: Bill[]): DashboardStats => {
+    const totalIncome = bills.filter(b => b.type === 'income').reduce((sum, b) => sum + (b.amount || 0), 0);
+    const totalExpenses = bills.filter(b => (b.type || 'expense') === 'expense').reduce((sum, b) => sum + (b.amount || 0), 0);
+
     return {
-        total: bills.reduce((sum, bill) => sum + (bill.amount || 0), 0),
+        total: totalExpenses,
+        totalIncome,
+        totalExpenses,
+        netBalance: totalIncome - totalExpenses,
         paid: bills.filter(b => b.status === 'paid').reduce((sum, bill) => sum + (bill.amount || 0), 0),
         pending: bills.filter(b => b.status === 'pending').reduce((sum, bill) => sum + (bill.amount || 0), 0),
         overdue: bills.filter(b => b.status === 'overdue').reduce((sum, bill) => sum + (bill.amount || 0), 0),
@@ -59,24 +65,16 @@ export const getNextDueDate = (currentDate: string, frequency: 'monthly' | 'year
             newMonth = 1;
             newYear += 1;
         }
-        // Check if day exists in new month (e.g. Jan 31 -> Feb 28)
-        const daysInNewMonth = new Date(newYear, newMonth, 0).getDate();
-        if (newDay > daysInNewMonth) {
-            newDay = daysInNewMonth;
-        }
     } else if (frequency === 'yearly') {
         newYear += 1;
-        // Check leap year (Feb 29 -> Feb 28 in non-leap year)
-        if (newMonth === 2 && newDay === 29) {
-            const daysInNewMonth = new Date(newYear, 2, 0).getDate();
-            if (newDay > daysInNewMonth) {
-                newDay = daysInNewMonth;
-            }
-        }
     }
 
-    // Format to YYYY-MM-DD
-    const mm = String(newMonth).padStart(2, '0');
-    const dd = String(newDay).padStart(2, '0');
-    return `${newYear}-${mm}-${dd}`;
+    // Handle end-of-month days (e.g. Jan 31 -> Feb 28)
+    const maxDaysInNewMonth = new Date(newYear, newMonth, 0).getDate();
+    if (newDay > maxDaysInNewMonth) {
+        newDay = maxDaysInNewMonth;
+    }
+
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${newYear}-${pad(newMonth)}-${pad(newDay)}`;
 };

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Bill } from '@/types';
+import { Bill, TransactionType } from '@/types';
 import { Loader2, User as UserIcon } from 'lucide-react';
 
 import { AddBillForm } from './components/features/bills/AddBillForm';
 import { BillsList } from './components/features/bills/BillsList';
 import { BillCalendar } from './components/features/calendar/BillCalendar';
+import { DashboardStats } from './components/ui/DashboardStats';
 import { UserPage } from './components/features/user/UserPage';
 import { PayBillModal } from './components/features/bills/PayBillModal';
 import { BillHistoryModal } from './components/features/bills/BillHistoryModal';
@@ -22,6 +23,7 @@ function App() {
     const { user, isAuthenticated, isLoading } = useAuth();
     const [showUserSheet, setShowUserSheet] = useState(false);
     const [showAddBillModal, setShowAddBillModal] = useState(false);
+    const [addModalType, setAddModalType] = useState<TransactionType>('expense');
     const [showAuthModal, setShowAuthModal] = useState(false);
     const [billToPay, setBillToPay] = useState<Bill | null>(null);
     const [historyBill, setHistoryBill] = useState<Bill | null>(null);
@@ -50,6 +52,8 @@ function App() {
         const handleKeyDown = (e: KeyboardEvent) => {
             if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
                 e.preventDefault();
+                setAddModalType('expense');
+                setBillToEdit(null);
                 setShowAddBillModal(true);
             }
         };
@@ -62,12 +66,15 @@ function App() {
         markAsPaid(id, details, createNextBill);
 
         const paidBill = bills.find(b => b.id === id);
-        let message = `Payment of ${currency}${details.amount.toFixed(2)} logged for "${paidBill?.name}".`;
+        const isIncome = paidBill?.type === 'income';
+        let message = isIncome
+            ? `Income of ${currency}${details.amount.toFixed(2)} logged for "${paidBill?.name}".`
+            : `Payment of ${currency}${details.amount.toFixed(2)} logged for "${paidBill?.name}".`;
         if (paidBill?.frequency !== 'one-time' && createNextBill) {
             message += ' Next due date has been scheduled.';
         }
 
-        showNotification('Payment Confirmed', message, 'success');
+        showNotification(isIncome ? 'Income Logged' : 'Payment Confirmed', message, 'success');
         setBillToPay(null);
     };
 
@@ -86,7 +93,7 @@ function App() {
     const handleDeleteBill = (id: string) => {
         const billToDelete = bills.find(b => b.id === id);
         deleteBill(id);
-        showNotification('Bill Deleted', `"${billToDelete?.name}" has been deleted.`, 'success');
+        showNotification('Item Deleted', `"${billToDelete?.name}" has been deleted.`, 'success');
 
         if (historyBill?.id === id) setHistoryBill(null);
         if (billToEdit?.id === id) setBillToEdit(null);
@@ -101,6 +108,7 @@ function App() {
 
     const handleEditBill = (bill: Bill) => {
         setBillToEdit(bill);
+        setAddModalType(bill.type || 'expense');
         setShowAddBillModal(true);
     };
 
@@ -112,6 +120,20 @@ function App() {
     const handleUpdateTransaction = (id: string, updatedTransaction: Bill) => {
         updateBill(id, updatedTransaction);
         setTransactionToEdit(null);
+    };
+
+    const stats = {
+        total: bills.filter(b => (b.type || 'expense') === 'expense').reduce((acc, b) => acc + (b.amount || 0), 0),
+        totalIncome: bills.filter(b => b.type === 'income').reduce((acc, b) => acc + (b.amount || 0), 0),
+        totalExpenses: bills.filter(b => (b.type || 'expense') === 'expense').reduce((acc, b) => acc + (b.amount || 0), 0),
+        netBalance: bills.filter(b => b.type === 'income').reduce((acc, b) => acc + (b.amount || 0), 0) - bills.filter(b => (b.type || 'expense') === 'expense').reduce((acc, b) => acc + (b.amount || 0), 0),
+        paid: bills.filter(b => b.status === 'paid').reduce((acc, b) => acc + (b.amount || 0), 0),
+        pending: bills.filter(b => b.status === 'pending').reduce((acc, b) => acc + (b.amount || 0), 0),
+        overdue: bills.filter(b => b.status === 'overdue').reduce((acc, b) => acc + (b.amount || 0), 0),
+        count: bills.length,
+        paidCount: bills.filter(b => b.status === 'paid').length,
+        pendingCount: bills.filter(b => b.status === 'pending').length,
+        overdueCount: bills.filter(b => b.status === 'overdue').length,
     };
 
     if (isLoading || (isAuthenticated && billsLoading)) {
@@ -131,10 +153,16 @@ function App() {
                 <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-secondary/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
             </div>
 
-            {/* Left Panel: Calendar & Stats (Sidebar) */}
+            {/* Left Panel: Calendar & Summary Stats */}
             <div className="relative z-10 w-full lg:w-[400px] xl:w-[480px] p-6 lg:p-10 flex flex-col gap-8 shrink-0 bg-card/30 backdrop-blur-md border-r border-border/30">
-                <div className="lg:sticky lg:top-10">
+                <div className="lg:sticky lg:top-10 flex flex-col gap-6">
                     <BillCalendar bills={bills} currency={currency} locale={locale} />
+
+                    {/* Financial Summary Stats in Sidebar */}
+                    <div className="bg-card/40 backdrop-blur-md rounded-3xl p-5 border border-border/20 shadow-sm">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">Financial Summary</h4>
+                        <DashboardStats stats={stats} currency={currency} locale={locale} />
+                    </div>
                 </div>
 
                 {/* User Profile Card */}
@@ -173,9 +201,11 @@ function App() {
                 </div>
             </div>
 
-            {/* Right Main Panel: Bills List */}
+            {/* Right Main Panel: Bills & Income List */}
             <div className="relative z-10 flex-1 bg-background/80 backdrop-blur-md p-6 lg:p-12 lg:rounded-l-[3rem] shadow-none lg:shadow-xl min-h-screen flex flex-col border-l border-border/20">
                 <div className="max-w-5xl mx-auto w-full">
+
+                    {/* Bills & Income List */}
                     <BillsList
                         bills={bills}
                         currency={currency}
@@ -187,8 +217,9 @@ function App() {
                         onSkip={handleSkipBill}
                         onDelete={handleDeleteBill}
                         onViewHistory={(bill) => setHistoryBill(bill)}
-                        onAddBill={() => {
+                        onAddBill={(type = 'expense') => {
                             setBillToEdit(null);
+                            setAddModalType(type);
                             setShowAddBillModal(true);
                         }}
                         onEdit={handleEditBill}
@@ -226,6 +257,7 @@ function App() {
                 onAddBill={addBill}
                 onUpdateBill={handleUpdateBill}
                 billToEdit={billToEdit}
+                initialType={addModalType}
                 onShowNotification={showNotification}
             />
 

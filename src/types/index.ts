@@ -1,5 +1,6 @@
 export type BillFrequency = 'one-time' | 'monthly' | 'yearly';
 export type PaymentMethod = 'url' | 'barcode' | 'manual' | 'other';
+export type TransactionType = 'expense' | 'income';
 
 export interface Bill {
     id: string;
@@ -9,6 +10,7 @@ export interface Bill {
     category: BillCategory;
     status: BillStatus;
     frequency: BillFrequency;
+    type?: TransactionType;
     icon?: string;
     paymentUrl?: string;
     paymentMethod?: PaymentMethod;
@@ -27,6 +29,12 @@ export type BillCategory =
     | 'internet'
     | 'credit-card'
     | 'loan'
+    | 'salary'
+    | 'freelance'
+    | 'investment'
+    | 'business'
+    | 'gift'
+    | 'refund'
     | 'other';
 
 export type BillStatus = 'paid' | 'pending' | 'overdue' | 'skipped';
@@ -38,6 +46,7 @@ export interface BillFormData {
     category: BillCategory;
     status: BillStatus;
     frequency: BillFrequency;
+    type: TransactionType;
     icon: string;
     paymentUrl: string;
     paymentMethod: PaymentMethod;
@@ -45,7 +54,6 @@ export interface BillFormData {
 
 export interface Notification {
     id: string;
-
     title: string;
     message: string;
     type: 'success' | 'warning' | 'error' | 'info';
@@ -66,4 +74,7 @@ export interface DashboardStats {
     paidCount: number;
     pendingCount: number;
     overdueCount: number;
+    totalIncome: number;
+    totalExpenses: number;
+    netBalance: number;
 }

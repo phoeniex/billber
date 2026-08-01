@@ -5,7 +5,7 @@ import {
     Map as MapIcon, Heart, Dumbbell, Stethoscope, Utensils, Coffee, Book,
     GraduationCap, Baby, Palette, Shirt, Watch, Gift, Scissors, Tag,
     PawPrint, Hammer, Sofa, Fuel, Ticket, Film, Coins, Banknote, Wallet,
-    Package, Truck, Printer, Plug, Leaf
+    Package, Truck, Printer, Plug, Leaf, Laptop, TrendingUp
 } from 'lucide-react';
 
 interface BillIconProps {
@@ -20,7 +20,7 @@ const icons: Record<string, React.ComponentType<{ className?: string }>> = {
     Map: MapIcon, Heart, Dumbbell, Stethoscope, Utensils, Coffee, Book,
     GraduationCap, Baby, Palette, Shirt, Watch, Gift, Scissors, Tag,
     PawPrint, Hammer, Sofa, Fuel, Ticket, Film, Coins, Banknote, Wallet,
-    Package, Truck, Printer, Plug, Leaf
+    Package, Truck, Printer, Plug, Leaf, Laptop, TrendingUp
 };
 
 export const BillIcon = ({ icon, className = "w-6 h-6" }: BillIconProps) => {

@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Bill, BillCategory, BillStatus, BillFrequency, PaymentMethod } from '@/types';
-import { BILL_ICONS } from '@/utils/constants';
+import { Bill, BillCategory, BillStatus, BillFrequency, PaymentMethod, TransactionType } from '@/types';
+import { BILL_ICONS, INCOME_CATEGORIES } from '@/utils/constants';
 import { BillIcon } from '@/components/ui/BillIcon';
 import { DatePicker } from '@/components/ui/DatePicker';
-import { PlusCircle, FileText, DollarSign, ExternalLink, QrCode, Tag, Calendar, User } from 'lucide-react';
+import { PlusCircle, FileText, DollarSign, ExternalLink, QrCode, Tag, Calendar, User, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 interface AddBillFormProps {
     isOpen: boolean;
@@ -17,10 +18,11 @@ interface AddBillFormProps {
     onAddBill: (bill: Omit<Bill, 'id'>) => void;
     onUpdateBill?: (id: string, updatedBill: Bill) => void;
     billToEdit?: Bill | null;
+    initialType?: TransactionType;
     onShowNotification: (title: string, message: string, type: 'info' | 'success' | 'warning' | 'error') => void;
 }
 
-const CATEGORIES: { value: BillCategory; label: string }[] = [
+const EXPENSE_CATEGORIES: { value: BillCategory; label: string }[] = [
     { value: 'utilities', label: 'Utilities' },
     { value: 'rent', label: 'Rent & Housing' },
     { value: 'insurance', label: 'Insurance' },
@@ -28,7 +30,7 @@ const CATEGORIES: { value: BillCategory; label: string }[] = [
     { value: 'internet', label: 'Internet & Phone' },
     { value: 'credit-card', label: 'Credit Card' },
     { value: 'loan', label: 'Loan & Debt' },
-    { value: 'other', label: 'Other' },
+    { value: 'other', label: 'Other Expense' },
 ];
 
 const FREQUENCIES: { value: BillFrequency; label: string }[] = [
@@ -50,9 +52,12 @@ export const AddBillForm = ({
     onAddBill,
     onUpdateBill,
     billToEdit,
+    initialType = 'expense',
     onShowNotification,
 }: AddBillFormProps) => {
     const isEditMode = !!billToEdit;
+
+    const [transactionType, setTransactionType] = useState<TransactionType>(initialType);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -68,6 +73,7 @@ export const AddBillForm = ({
 
     useEffect(() => {
         if (billToEdit && isOpen) {
+            setTransactionType(billToEdit.type || 'expense');
             setFormData({
                 name: billToEdit.name || '',
                 amount: billToEdit.amount !== undefined ? billToEdit.amount.toString() : '',
@@ -75,24 +81,35 @@ export const AddBillForm = ({
                 category: billToEdit.category || 'utilities',
                 status: billToEdit.status || 'pending',
                 frequency: billToEdit.frequency || 'one-time',
-                icon: billToEdit.icon || 'FileText',
+                icon: billToEdit.icon || (billToEdit.type === 'income' ? 'Briefcase' : 'FileText'),
                 paymentUrl: billToEdit.paymentUrl || '',
                 paymentMethod: billToEdit.paymentMethod || 'manual',
             });
-        } else if (!isOpen) {
+        } else if (isOpen) {
+            const defaultType = initialType;
+            setTransactionType(defaultType);
             setFormData({
                 name: '',
                 amount: '',
-                dueDate: '',
-                category: 'utilities',
+                dueDate: new Date().toISOString().split('T')[0],
+                category: defaultType === 'income' ? 'salary' : 'utilities',
                 status: 'pending',
                 frequency: 'one-time',
-                icon: 'FileText',
+                icon: defaultType === 'income' ? 'Briefcase' : 'FileText',
                 paymentUrl: '',
                 paymentMethod: 'manual',
             });
         }
-    }, [billToEdit, isOpen]);
+    }, [billToEdit, isOpen, initialType]);
+
+    const handleTypeChange = (type: TransactionType) => {
+        setTransactionType(type);
+        setFormData(prev => ({
+            ...prev,
+            category: type === 'income' ? 'salary' : 'utilities',
+            icon: type === 'income' ? 'Briefcase' : 'FileText',
+        }));
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -105,6 +122,7 @@ export const AddBillForm = ({
         if (isEditMode && billToEdit && onUpdateBill) {
             const updatedBill: Bill = {
                 ...billToEdit,
+                type: transactionType,
                 name: formData.name,
                 amount: formData.amount ? parseFloat(formData.amount) : undefined,
                 dueDate: formData.dueDate,
@@ -116,11 +134,12 @@ export const AddBillForm = ({
                 paymentMethod: formData.paymentMethod,
             };
             onUpdateBill(billToEdit.id, updatedBill);
-            onShowNotification('Success!', `Bill "${formData.name}" has been updated.`, 'success');
+            onShowNotification('Success!', `"${formData.name}" has been updated.`, 'success');
         } else {
             const groupId = Date.now().toString();
             const newBill: Omit<Bill, 'id'> = {
                 groupId,
+                type: transactionType,
                 name: formData.name,
                 amount: formData.amount ? parseFloat(formData.amount) : undefined,
                 dueDate: formData.dueDate,
@@ -135,37 +154,31 @@ export const AddBillForm = ({
 
             onAddBill(newBill);
 
-            let successMessage = `Bill "${formData.name}" has been added.`;
+            const isIncome = transactionType === 'income';
+            let successMessage = isIncome
+                ? `Income "${formData.name}" logged successfully.`
+                : `Bill "${formData.name}" added successfully.`;
             if (formData.frequency !== 'one-time') {
                 successMessage += ` Recurring (${formData.frequency}) cycle enabled.`;
             }
             onShowNotification('Success!', successMessage, 'success');
         }
 
-        setFormData({
-            name: '',
-            amount: '',
-            dueDate: '',
-            category: 'utilities',
-            status: 'pending',
-            frequency: 'one-time',
-            icon: 'FileText',
-            paymentUrl: '',
-            paymentMethod: 'manual',
-        });
         onClose();
     };
+
+    const categoriesList = transactionType === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="w-11/12 max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden rounded-3xl border-border/30 shadow-2xl">
                 {/* Fixed Sticky Header */}
-                <DialogHeader className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border/20 px-6 sm:px-8 py-5 flex flex-row items-center justify-between shrink-0 mb-0">
+                <DialogHeader className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border/20 px-6 sm:px-8 py-5 pr-16 flex flex-row items-center justify-between shrink-0 mb-0">
                     <DialogTitle className="text-2xl font-bold flex items-center gap-2">
                         {isEditMode ? (
-                            <><FileText className="w-7 h-7 text-primary" /> Edit Bill</>
+                            <><FileText className="w-7 h-7 text-primary" /> Edit {transactionType === 'income' ? 'Income' : 'Bill'}</>
                         ) : (
-                            <><PlusCircle className="w-7 h-7 text-primary" /> Add New Bill</>
+                            <><PlusCircle className="w-7 h-7 text-primary" /> Add {transactionType === 'income' ? 'Income' : 'Bill'}</>
                         )}
                     </DialogTitle>
                 </DialogHeader>
@@ -174,20 +187,50 @@ export const AddBillForm = ({
                 <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
                     {/* Scrollable Form Fields */}
                     <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6">
+                        {/* Transaction Type Segmented Switcher */}
+                        {!isEditMode && (
+                            <div className="p-1 bg-muted rounded-2xl flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => handleTypeChange('expense')}
+                                    className={cn(
+                                        "flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-300",
+                                        transactionType === 'expense'
+                                            ? "bg-card text-foreground shadow-md font-extrabold"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    <ArrowDownCircle className="w-4 h-4 text-destructive" /> Bill / Expense
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleTypeChange('income')}
+                                    className={cn(
+                                        "flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-300",
+                                        transactionType === 'income'
+                                            ? "bg-emerald-600 text-white shadow-md font-extrabold"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    <ArrowUpCircle className="w-4 h-4 text-emerald-300" /> Income Earnings
+                                </button>
+                            </div>
+                        )}
+
                         {/* Section 1: Identity */}
                         <div className="bg-muted/40 border border-border/20 p-5 rounded-2xl">
                             <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
-                                <User className="w-4 h-4" /> Identity &amp; Details
+                                <User className="w-4 h-4" /> Identity &amp; Amount
                             </h4>
                             <div className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
-                                        <Label htmlFor="bill-name">Bill Name *</Label>
+                                        <Label htmlFor="bill-name">{transactionType === 'income' ? 'Income Source Name *' : 'Bill Name *'}</Label>
                                         <Input
                                             id="bill-name"
                                             type="text"
                                             name="name"
-                                            placeholder="e.g. Electric Utility"
+                                            placeholder={transactionType === 'income' ? 'e.g. Monthly Salary' : 'e.g. Electric Utility'}
                                             value={formData.name}
                                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                             required
@@ -221,7 +264,7 @@ export const AddBillForm = ({
                             </h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <DatePicker
-                                    label="Due Date *"
+                                    label={transactionType === 'income' ? 'Received / Pay Date *' : 'Due Date *'}
                                     value={formData.dueDate}
                                     onChange={(newDate) => setFormData({ ...formData, dueDate: newDate })}
                                     required
@@ -251,7 +294,7 @@ export const AddBillForm = ({
                         {/* Section 3: Category & Icon */}
                         <div className="bg-muted/40 border border-border/20 p-5 rounded-2xl">
                             <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
-                                <Tag className="w-4 h-4" /> Categorization &amp; Icon
+                                <Tag className="w-4 h-4" /> Category &amp; Visual Icon
                             </h4>
                             <div className="space-y-4">
                                 <div className="space-y-1.5">
@@ -264,7 +307,7 @@ export const AddBillForm = ({
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {CATEGORIES.map((cat) => (
+                                            {categoriesList.map((cat) => (
                                                 <SelectItem key={cat.value} value={cat.value}>
                                                     {cat.label}
                                                 </SelectItem>
@@ -283,7 +326,9 @@ export const AddBillForm = ({
                                                 onClick={() => setFormData({ ...formData, icon: iconObj.id })}
                                                 className={`p-2.5 rounded-xl flex flex-col items-center justify-center transition-all ${
                                                     formData.icon === iconObj.id
-                                                        ? 'bg-primary text-primary-foreground shadow-md scale-105'
+                                                        ? transactionType === 'income'
+                                                            ? 'bg-emerald-600 text-white shadow-md scale-105'
+                                                            : 'bg-primary text-primary-foreground shadow-md scale-105'
                                                         : 'hover:bg-muted text-muted-foreground hover:text-foreground'
                                                 }`}
                                                 title={iconObj.label}
@@ -299,11 +344,11 @@ export const AddBillForm = ({
                         {/* Section 4: Payment Method */}
                         <div className="bg-muted/40 border border-border/20 p-5 rounded-2xl">
                             <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
-                                <ExternalLink className="w-4 h-4" /> Payment Details
+                                <ExternalLink className="w-4 h-4" /> Reference &amp; Links
                             </h4>
                             <div className="space-y-4">
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="payment-method">Payment Method</Label>
+                                    <Label htmlFor="payment-method">Reference Type</Label>
                                     <div className="grid grid-cols-3 gap-2">
                                         {PAYMENT_METHODS.map((method) => {
                                             const IconComp = method.icon;
@@ -328,7 +373,7 @@ export const AddBillForm = ({
 
                                 {formData.paymentMethod === 'url' && (
                                     <div className="space-y-1.5 animate-fade-in">
-                                        <Label htmlFor="payment-url">Payment Link / URL</Label>
+                                        <Label htmlFor="payment-url">Link / URL</Label>
                                         <Input
                                             id="payment-url"
                                             type="url"
@@ -344,7 +389,7 @@ export const AddBillForm = ({
                                 {formData.paymentMethod === 'barcode' && (
                                     <div className="space-y-1.5 animate-fade-in">
                                         <Label htmlFor="payment-ref" className="flex items-center gap-2">
-                                            <QrCode className="w-4 h-4" /> Barcode / Reference No.
+                                            <QrCode className="w-4 h-4" /> Reference No.
                                         </Label>
                                         <Input
                                             id="payment-ref"
@@ -362,13 +407,13 @@ export const AddBillForm = ({
                                 {formData.paymentMethod === 'manual' && (
                                     <div className="space-y-1.5 animate-fade-in">
                                         <Label htmlFor="payment-detail" className="flex items-center gap-2">
-                                            <FileText className="w-4 h-4" /> Payment Details (Optional)
+                                            <FileText className="w-4 h-4" /> Details / Note (Optional)
                                         </Label>
                                         <Input
                                             id="payment-detail"
                                             type="text"
                                             name="paymentUrl"
-                                            placeholder="e.g. Bank Account: 123-456..."
+                                            placeholder="e.g. Bank Transfer Ref: 123-456"
                                             value={formData.paymentUrl}
                                             onChange={(e) => setFormData({ ...formData, paymentUrl: e.target.value })}
                                         />
@@ -383,9 +428,17 @@ export const AddBillForm = ({
                         <Button type="button" variant="ghost" onClick={onClose} className="h-11 px-6 font-medium">
                             Cancel
                         </Button>
-                        <Button type="submit" className="h-11 px-8 font-bold text-sm rounded-xl shadow-md hover:scale-105 transition-all">
+                        <Button
+                            type="submit"
+                            className={cn(
+                                "h-11 px-8 font-bold text-sm rounded-xl shadow-md hover:scale-105 transition-all",
+                                transactionType === 'income'
+                                    ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                                    : ""
+                            )}
+                        >
                             <PlusCircle className="w-5 h-5 mr-2" />
-                            {isEditMode ? 'Update Bill' : 'Save Bill'}
+                            {isEditMode ? (transactionType === 'income' ? 'Update Income' : 'Update Bill') : (transactionType === 'income' ? 'Save Income' : 'Save Bill')}
                         </Button>
                     </div>
                 </form>

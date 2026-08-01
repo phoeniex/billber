@@ -1,10 +1,16 @@
 import { useState } from 'react';
-import { Bill } from '@/types';
+import { Bill, TransactionType } from '@/types';
 import { BillRow } from './BillRow';
-import { AlertCircle, CalendarCheck, Calendar, Plus, ChevronDown, ChevronUp, Search, Filter } from 'lucide-react';
+import { AlertCircle, CalendarCheck, Calendar, Plus, ChevronDown, ChevronUp, Search, Filter, TrendingUp, Receipt } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 
 interface BillsListProps {
@@ -15,11 +21,14 @@ interface BillsListProps {
     onSkip: (id: string) => void;
     onDelete: (id: string) => void;
     onViewHistory: (bill: Bill) => void;
-    onAddBill: () => void;
+    onAddBill: (initialType?: TransactionType) => void;
     onEdit: (bill: Bill) => void;
 }
 
-const CATEGORIES = ['utilities', 'rent', 'insurance', 'subscription', 'internet', 'credit-card', 'loan', 'other'];
+const CATEGORIES = [
+    'utilities', 'rent', 'insurance', 'subscription', 'internet', 'credit-card', 'loan',
+    'salary', 'freelance', 'investment', 'business', 'gift', 'refund', 'other'
+];
 
 export const BillsList = ({
     bills, currency, locale,
@@ -30,13 +39,19 @@ export const BillsList = ({
     const [showAllPaid, setShowAllPaid] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterCategory, setFilterCategory] = useState('all');
+    const [filterType, setFilterType] = useState<'all' | 'expense' | 'income'>('all');
     const [showFilter, setShowFilter] = useState(false);
 
-    const filteredBills = bills.filter(b =>
-        (filterCategory === 'all' || b.category === filterCategory) &&
-        (b.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            b.category.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    const filteredBills = bills.filter(b => {
+        const itemType = b.type || 'expense';
+        const typeMatch = filterType === 'all' || itemType === filterType;
+        const catMatch = filterCategory === 'all' || b.category === filterCategory;
+        const searchMatch = (
+            b.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            b.category.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        return typeMatch && catMatch && searchMatch;
+    });
 
     const activeBills = filteredBills.filter(b => b.status === 'pending' || b.status === 'overdue');
 
@@ -74,37 +89,103 @@ export const BillsList = ({
     const allBuckets = categorizeBills(bills);
 
     const shouldShow = (type: keyof typeof buckets) => {
-        if (searchQuery || filterCategory !== 'all') return allBuckets[type].length > 0;
+        if (searchQuery || filterCategory !== 'all' || filterType !== 'all') return allBuckets[type].length > 0;
         return buckets[type].length > 0;
     };
 
     return (
         <div className="space-y-8 animate-fade-in pl-0 lg:pl-6">
             <div className="flex flex-col gap-4 mb-6">
-                <div className="flex justify-between items-center">
-                    <h2 className="text-2xl font-bold text-primary">Upcoming Bills</h2>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            onClick={onAddBill}
-                            className="rounded-full h-10 px-5 shadow-md font-bold text-sm transition-transform hover:scale-105"
-                        >
-                            <Plus className="w-4 h-4 mr-1.5" /> Add Bill
-                        </Button>
+                {/* Section Title & Quick Add Buttons */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-2xl font-bold text-foreground">Financial Overview</h2>
+                        <p className="text-xs text-muted-foreground mt-0.5">Manage your income earnings and upcoming bills</p>
                     </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger render={
+                            <Button
+                                className="rounded-full h-10 px-5 shadow-md font-bold text-xs sm:text-sm transition-transform hover:scale-105 gap-1.5 cursor-pointer"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Add New
+                                <ChevronDown className="w-4 h-4 opacity-70 ml-0.5" />
+                            </Button>
+                        } />
+                        <DropdownMenuContent align="end" className="w-52 p-1.5 rounded-2xl shadow-xl border-border/30">
+                            <DropdownMenuItem
+                                onClick={() => onAddBill('expense')}
+                                className="rounded-xl py-2.5 font-semibold text-xs sm:text-sm cursor-pointer"
+                            >
+                                <Receipt className="w-4 h-4 mr-2 text-muted-foreground" />
+                                Add Bill / Expense
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={() => onAddBill('income')}
+                                className="rounded-xl py-2.5 font-semibold text-xs sm:text-sm cursor-pointer"
+                            >
+                                <TrendingUp className="w-4 h-4 mr-2 text-muted-foreground" />
+                                Add Income Earnings
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
 
-                <div className="flex gap-2">
+                {/* Filter Tabs & Search */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    {/* Filter Type Pills */}
+                    <div className="p-1 bg-muted/60 rounded-full flex gap-1 self-start sm:self-auto border border-border/20">
+                        <button
+                            type="button"
+                            onClick={() => setFilterType('all')}
+                            className={cn(
+                                "px-3.5 py-1.5 rounded-full text-xs font-bold transition-all",
+                                filterType === 'all'
+                                    ? "bg-card text-foreground shadow-xs"
+                                    : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            All
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setFilterType('expense')}
+                            className={cn(
+                                "px-3.5 py-1.5 rounded-full text-xs font-bold transition-all",
+                                filterType === 'expense'
+                                    ? "bg-card text-foreground shadow-xs"
+                                    : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            Bills / Expenses
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setFilterType('income')}
+                            className={cn(
+                                "px-3.5 py-1.5 rounded-full text-xs font-bold transition-all",
+                                filterType === 'income'
+                                    ? "bg-emerald-600 text-white shadow-xs"
+                                    : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            Income
+                        </button>
+                    </div>
+
+                    {/* Search Input */}
                     <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
                             type="text"
-                            placeholder="Search bills..."
-                            className="pl-9 rounded-full bg-card/50 focus:bg-card transition-colors h-9"
+                            placeholder="Search by name or category..."
+                            className="pl-9 rounded-full bg-card/50 focus:bg-card transition-colors h-10 border-border/30"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
-                    <div className="relative">
+
+                    <div className="relative shrink-0">
                         {filterCategory !== 'all' && (
                             <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-primary border-2 border-background z-10" />
                         )}
@@ -112,70 +193,159 @@ export const BillsList = ({
                             onClick={() => setShowFilter(!showFilter)}
                             size="icon"
                             variant={showFilter ? 'default' : 'ghost'}
-                            className="rounded-full h-10 w-10"
-                            title="Toggle Filter"
+                            className="rounded-full h-10 w-10 border border-border/30"
+                            title="Toggle Category Filter"
                         >
                             <Filter className="w-4 h-4" />
                         </Button>
                     </div>
                 </div>
 
+                {/* Expanded Category Filter Bar */}
                 {showFilter && (
-                    <div className="flex flex-wrap gap-1.5 animate-fade-in mt-1">
-                        <button
+                    <div className="p-3 bg-card border border-border/30 rounded-2xl animate-fade-in flex flex-wrap gap-1.5">
+                        <Badge
+                            variant={filterCategory === 'all' ? 'default' : 'outline'}
+                            className="cursor-pointer capitalize px-3 py-1 text-xs"
                             onClick={() => setFilterCategory('all')}
-                            className={cn(
-                                'text-xs px-3 py-1.5 rounded-full font-medium transition-all duration-200',
-                                filterCategory === 'all'
-                                    ? 'bg-primary text-primary-foreground shadow-sm'
-                                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                            )}
                         >
-                            All
-                        </button>
+                            All Categories
+                        </Badge>
                         {CATEGORIES.map(cat => (
-                            <button
+                            <Badge
                                 key={cat}
+                                variant={filterCategory === cat ? 'default' : 'outline'}
+                                className="cursor-pointer capitalize px-3 py-1 text-xs"
                                 onClick={() => setFilterCategory(cat)}
-                                className={cn(
-                                    'text-xs px-3 py-1.5 rounded-full font-medium capitalize transition-all duration-200',
-                                    filterCategory === cat
-                                        ? 'bg-primary text-primary-foreground shadow-sm'
-                                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                                )}
                             >
-                                {cat.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
-                            </button>
+                                {cat}
+                            </Badge>
                         ))}
                     </div>
                 )}
             </div>
 
-            {bills.length === 0 ? (
-                <div className="py-12 text-center text-muted-foreground">
-                    <h2 className="text-xl font-bold mb-4">No Bills Yet</h2>
-                    <p className="mb-4 text-sm">Add your first bill to get started.</p>
+            {/* Overdue Section */}
+            {shouldShow('overdue') && (
+                <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-destructive font-bold text-base px-1">
+                        <AlertCircle className="w-5 h-5" />
+                        <h3>Overdue</h3>
+                        <Badge variant="destructive" className="ml-auto rounded-full px-2.5">
+                            {buckets.overdue.length}
+                        </Badge>
+                    </div>
+                    {buckets.overdue.map(bill => (
+                        <BillRow
+                            key={bill.id}
+                            bill={bill}
+                            currency={currency}
+                            locale={locale}
+                            onMarkAsPaid={onMarkAsPaid}
+                            onSkip={onSkip}
+                            onDelete={onDelete}
+                            onViewHistory={onViewHistory}
+                            onEdit={onEdit}
+                        />
+                    ))}
                 </div>
-            ) : (
-                <>
-                    {activeBills.length === 0 && !searchQuery && filterCategory === 'all' && (
-                        <div className="py-8 text-center text-muted-foreground">
-                            <CalendarCheck className="w-12 h-12 mx-auto mb-3 text-[color:var(--success)]" />
-                            <h3 className="text-xl font-bold mb-1">All Caught Up!</h3>
-                            <p className="text-sm">No pending bills matching your criteria.</p>
-                        </div>
-                    )}
+            )}
 
-                    {shouldShow('overdue') && (
-                        <div className="space-y-3">
-                            <h3 className="text-lg font-bold text-destructive flex items-center gap-2 mb-4">
-                                <AlertCircle className="w-5 h-5" /> Overdue
-                                <Badge variant="destructive" className="text-xs">
-                                    {buckets.overdue.length}
-                                </Badge>
-                            </h3>
-                            <div className="space-y-2">
-                                {buckets.overdue.length > 0 ? buckets.overdue.map(bill => (
+            {/* Due This Week Section */}
+            {shouldShow('thisWeek') && (
+                <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-primary font-bold text-base px-1">
+                        <CalendarCheck className="w-5 h-5" />
+                        <h3>Due Next 7 Days</h3>
+                        <Badge variant="secondary" className="ml-auto rounded-full px-2.5">
+                            {buckets.thisWeek.length}
+                        </Badge>
+                    </div>
+                    {buckets.thisWeek.map(bill => (
+                        <BillRow
+                            key={bill.id}
+                            bill={bill}
+                            currency={currency}
+                            locale={locale}
+                            onMarkAsPaid={onMarkAsPaid}
+                            onSkip={onSkip}
+                            onDelete={onDelete}
+                            onViewHistory={onViewHistory}
+                            onEdit={onEdit}
+                        />
+                    ))}
+                </div>
+            )}
+
+            {/* Later This Month Section */}
+            {shouldShow('laterThisMonth') && (
+                <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-muted-foreground font-bold text-base px-1">
+                        <Calendar className="w-5 h-5" />
+                        <h3>Later This Month</h3>
+                        <Badge variant="outline" className="ml-auto rounded-full px-2.5">
+                            {buckets.laterThisMonth.length}
+                        </Badge>
+                    </div>
+                    {buckets.laterThisMonth.map(bill => (
+                        <BillRow
+                            key={bill.id}
+                            bill={bill}
+                            currency={currency}
+                            locale={locale}
+                            onMarkAsPaid={onMarkAsPaid}
+                            onSkip={onSkip}
+                            onDelete={onDelete}
+                            onViewHistory={onViewHistory}
+                            onEdit={onEdit}
+                        />
+                    ))}
+                </div>
+            )}
+
+            {/* Upcoming Month Section */}
+            {shouldShow('upcomingMonth') && (
+                <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-muted-foreground font-bold text-base px-1">
+                        <Calendar className="w-5 h-5" />
+                        <h3>Future Billing Cycles</h3>
+                        <Badge variant="outline" className="ml-auto rounded-full px-2.5">
+                            {buckets.upcomingMonth.length}
+                        </Badge>
+                    </div>
+                    {buckets.upcomingMonth.map(bill => (
+                        <BillRow
+                            key={bill.id}
+                            bill={bill}
+                            currency={currency}
+                            locale={locale}
+                            onMarkAsPaid={onMarkAsPaid}
+                            onSkip={onSkip}
+                            onDelete={onDelete}
+                            onViewHistory={onViewHistory}
+                            onEdit={onEdit}
+                        />
+                    ))}
+                </div>
+            )}
+
+            {/* Completed / History Toggle Section */}
+            {filteredBills.some(b => b.status === 'paid') && (
+                <div className="pt-4 border-t border-border/30">
+                    <button
+                        type="button"
+                        onClick={() => setShowAllPaid(!showAllPaid)}
+                        className="flex items-center justify-between w-full p-4 rounded-2xl bg-card/40 hover:bg-card/80 transition-all font-bold text-sm text-muted-foreground hover:text-foreground border border-border/20"
+                    >
+                        <span>Completed Transactions ({filteredBills.filter(b => b.status === 'paid').length})</span>
+                        {showAllPaid ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </button>
+
+                    {showAllPaid && (
+                        <div className="mt-4 space-y-3 animate-fade-in">
+                            {filteredBills
+                                .filter(b => b.status === 'paid')
+                                .map(bill => (
                                     <BillRow
                                         key={bill.id}
                                         bill={bill}
@@ -187,139 +357,50 @@ export const BillsList = ({
                                         onViewHistory={onViewHistory}
                                         onEdit={onEdit}
                                     />
-                                )) : (
-                                    <div className="text-sm text-muted-foreground italic px-2">No matching overdue bills</div>
-                                )}
-                            </div>
+                                ))}
                         </div>
                     )}
+                </div>
+            )}
 
-                    {shouldShow('thisWeek') && (
-                        <div className="space-y-3">
-                            <h3 className="text-lg font-bold text-primary flex items-center gap-2 mb-4">
-                                <Calendar className="w-5 h-5" /> This week
-                                {buckets.thisWeek.length > 0 && (
-                                    <Badge className="text-xs">{buckets.thisWeek.length}</Badge>
-                                )}
-                            </h3>
-                            <div className="space-y-2">
-                                {buckets.thisWeek.length > 0 ? buckets.thisWeek.map(bill => (
-                                    <BillRow
-                                        key={bill.id}
-                                        bill={bill}
-                                        currency={currency}
-                                        locale={locale}
-                                        onMarkAsPaid={onMarkAsPaid}
-                                        onSkip={onSkip}
-                                        onDelete={onDelete}
-                                        onViewHistory={onViewHistory}
-                                        onEdit={onEdit}
-                                    />
-                                )) : (
-                                    <div className="text-sm text-muted-foreground italic px-2">No matching bills this week</div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {shouldShow('laterThisMonth') && (
-                        <div className="space-y-3">
-                            <h3 className="text-lg font-bold text-muted-foreground flex items-center gap-2 mb-4">
-                                <CalendarCheck className="w-5 h-5" /> Later this month
-                                {buckets.laterThisMonth.length > 0 && (
-                                    <Badge variant="secondary" className="text-xs">{buckets.laterThisMonth.length}</Badge>
-                                )}
-                            </h3>
-                            <div className="space-y-2">
-                                {buckets.laterThisMonth.length > 0 ? buckets.laterThisMonth.map(bill => (
-                                    <BillRow
-                                        key={bill.id}
-                                        bill={bill}
-                                        currency={currency}
-                                        locale={locale}
-                                        onMarkAsPaid={onMarkAsPaid}
-                                        onSkip={onSkip}
-                                        onDelete={onDelete}
-                                        onViewHistory={onViewHistory}
-                                        onEdit={onEdit}
-                                    />
-                                )) : (
-                                    <div className="text-sm text-muted-foreground italic px-2">No matching bills later this month</div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {shouldShow('upcomingMonth') && (
-                        <div className="space-y-3">
-                            <h3 className="text-lg font-bold text-muted-foreground flex items-center gap-2 mb-4">
-                                <CalendarCheck className="w-5 h-5" /> Upcoming month
-                                {buckets.upcomingMonth.length > 0 && (
-                                    <Badge variant="secondary" className="text-xs">{buckets.upcomingMonth.length}</Badge>
-                                )}
-                            </h3>
-                            <div className="space-y-2">
-                                {buckets.upcomingMonth.length > 0 ? buckets.upcomingMonth.map(bill => (
-                                    <BillRow
-                                        key={bill.id}
-                                        bill={bill}
-                                        currency={currency}
-                                        locale={locale}
-                                        onMarkAsPaid={onMarkAsPaid}
-                                        onSkip={onSkip}
-                                        onDelete={onDelete}
-                                        onViewHistory={onViewHistory}
-                                        onEdit={onEdit}
-                                    />
-                                )) : (
-                                    <div className="text-sm text-muted-foreground italic px-2">No matching bills upcoming month</div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Display paid one-time bills */}
-                    {filteredBills.filter(b => b.status === 'paid' && b.frequency === 'one-time').length > 0 && (
-                        <div className="space-y-3 pt-6 border-t border-border">
-                            <button
-                                onClick={() => setShowAllPaid(!showAllPaid)}
-                                className="flex items-center justify-between w-full text-left group"
-                            >
-                                <h3 className="text-lg font-bold text-muted-foreground group-hover:text-foreground transition-colors flex items-center gap-2">
-                                    <CalendarCheck className="w-5 h-5" /> All Paid
-                                    <Badge variant="outline" className="text-xs">
-                                        {filteredBills.filter(b => b.status === 'paid' && b.frequency === 'one-time').length}
-                                    </Badge>
-                                </h3>
-                                {showAllPaid ? (
-                                    <ChevronDown className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
-                                ) : (
-                                    <ChevronUp className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
-                                )}
-                            </button>
-
-                            {showAllPaid && (
-                                <div className="space-y-2 opacity-60 hover:opacity-100 transition-opacity animate-fade-in">
-                                    {filteredBills.filter(b => b.status === 'paid' && b.frequency === 'one-time')
-                                        .sort((a, b) => new Date(b.paidDate || b.dueDate).getTime() - new Date(a.paidDate || a.dueDate).getTime())
-                                        .map(bill => (
-                                            <BillRow
-                                                key={bill.id}
-                                                bill={bill}
-                                                currency={currency}
-                                                locale={locale}
-                                                onMarkAsPaid={onMarkAsPaid}
-                                                onSkip={onSkip}
-                                                onDelete={onDelete}
-                                                onViewHistory={onViewHistory}
-                                                onEdit={onEdit}
-                                            />
-                                        ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </>
+            {/* Empty State */}
+            {activeBills.length === 0 && (
+                <div className="text-center py-16 px-4 bg-card/40 border border-border/20 rounded-3xl animate-fade-in">
+                    <div className="w-16 h-16 bg-muted/80 rounded-2xl flex items-center justify-center mx-auto mb-4 text-muted-foreground">
+                        <CalendarCheck className="w-8 h-8" />
+                    </div>
+                    <h3 className="text-xl font-bold mb-1">No Active Transactions Found</h3>
+                    <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-6">
+                        {searchQuery || filterCategory !== 'all' || filterType !== 'all'
+                            ? 'Try clearing your search query or filters.'
+                            : 'All caught up! Add a new bill or log an income transaction to get started.'}
+                    </p>
+                    <div className="flex items-center justify-center">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger render={
+                                <Button className="rounded-full font-bold px-6 h-11 shadow-md gap-2 cursor-pointer">
+                                    <Plus className="w-4 h-4" /> Add New Transaction <ChevronDown className="w-4 h-4 opacity-70" />
+                                </Button>
+                            } />
+                            <DropdownMenuContent align="center" className="w-52 p-1.5 rounded-2xl shadow-xl border-border/30">
+                                <DropdownMenuItem
+                                    onClick={() => onAddBill('expense')}
+                                    className="rounded-xl py-2.5 font-semibold text-xs sm:text-sm cursor-pointer"
+                                >
+                                    <Receipt className="w-4 h-4 mr-2 text-muted-foreground" />
+                                    Add Bill / Expense
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() => onAddBill('income')}
+                                    className="rounded-xl py-2.5 font-semibold text-xs sm:text-sm cursor-pointer"
+                                >
+                                    <TrendingUp className="w-4 h-4 mr-2 text-muted-foreground" />
+                                    Add Income Earnings
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                </div>
             )}
         </div>
     );
