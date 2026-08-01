@@ -96,7 +96,7 @@ export const BillRow = ({
                                 e.stopPropagation();
                                 onMarkAsPaid(bill.id);
                             }}
-                            className="rounded-full h-9.5 px-4.5 text-xs sm:text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:scale-105 transition-all"
+                            className="rounded-full h-9.5 px-4.5 text-xs sm:text-sm font-bold bg-[#C8A96B] hover:bg-[#B8985B] text-white shadow-md hover:scale-105 transition-all cursor-pointer"
                             title={isIncome ? "Log Income Received" : "Mark as Paid"}
                         >
                             <CheckCircle className="w-4 h-4 mr-1.5" /> {isIncome ? 'Receive' : 'Pay'}

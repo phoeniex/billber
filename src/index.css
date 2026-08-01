@@ -1,12 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-sans: 'Outfit', sans-serif;
-    --font-heading: 'Outfit', sans-serif;
+    --font-sans: 'Figtree', sans-serif;
+    --font-heading: 'Figtree', sans-serif;
     --color-background: var(--background);
     --color-foreground: var(--foreground);
     --color-card: var(--card);
@@ -37,57 +37,57 @@
     --radius-3xl: calc(var(--radius) * 2.4);
 }
 
-/* Light theme */
+/* Light theme - Earthy Sage & Warm Sand Palette */
 :root {
-    --background: oklch(0.98 0.005 250);
-    --foreground: oklch(0.15 0.02 250);
+    --background: oklch(0.98 0.008 75); /* Soft Warm Alabaster Cream (#FAF8F5) */
+    --foreground: oklch(0.22 0.02 140); /* Deep Forest Graphite (#2C352C) */
     --card: oklch(1 0 0);
-    --card-foreground: oklch(0.15 0.02 250);
+    --card-foreground: oklch(0.22 0.02 140);
     --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.15 0.02 250);
-    --primary: oklch(0.55 0.22 270);
+    --popover-foreground: oklch(0.22 0.02 140);
+    --primary: oklch(0.56 0.04 140); /* Earthy Sage Green (#6E826E) */
     --primary-foreground: oklch(0.99 0 0);
-    --secondary: oklch(0.92 0.06 270);
-    --secondary-foreground: oklch(0.35 0.15 270);
-    --muted: oklch(0.94 0.01 250);
-    --muted-foreground: oklch(0.52 0.04 250);
-    --accent: oklch(0.94 0.04 290);
-    --accent-foreground: oklch(0.35 0.15 270);
-    --destructive: oklch(0.58 0.22 25);
-    --border: oklch(0.88 0.02 250);
-    --input: oklch(0.88 0.02 250);
-    --ring: oklch(0.55 0.22 270);
-    --success: oklch(0.52 0.18 150);
+    --secondary: oklch(0.87 0.025 140); /* Soft Pale Sage (#C8D6C5) */
+    --secondary-foreground: oklch(0.28 0.03 140);
+    --muted: oklch(0.95 0.01 100); /* Soft Linen (#F4F2EE) */
+    --muted-foreground: oklch(0.50 0.02 140);
+    --accent: oklch(0.74 0.10 75); /* Warm Golden Sand (#C8A86B) */
+    --accent-foreground: oklch(0.22 0.03 75);
+    --destructive: oklch(0.56 0.15 28); /* Warm Terracotta Rust (#C85A54) */
+    --border: oklch(0.89 0.015 120);
+    --input: oklch(0.89 0.015 120);
+    --ring: oklch(0.56 0.04 140);
+    --success: oklch(0.66 0.04 140); /* Sage Green (#8B9E8B) */
     --success-foreground: oklch(0.99 0 0);
-    --warning: oklch(0.70 0.18 75);
-    --warning-foreground: oklch(0.25 0.05 75);
+    --warning: oklch(0.74 0.10 75); /* Warm Sand Ochre (#C8A86B) */
+    --warning-foreground: oklch(0.22 0.03 75);
     --radius: 0.625rem;
 }
 
-/* Dark theme */
+/* Dark theme - Earthy Sage & Warm Sand Palette */
 .dark {
-    --background: oklch(0.13 0.015 250);
-    --foreground: oklch(0.96 0.005 250);
-    --card: oklch(0.18 0.02 250);
-    --card-foreground: oklch(0.96 0.005 250);
-    --popover: oklch(0.20 0.02 250);
-    --popover-foreground: oklch(0.96 0.005 250);
-    --primary: oklch(0.68 0.22 275);
-    --primary-foreground: oklch(0.12 0.02 270);
-    --secondary: oklch(0.25 0.04 260);
-    --secondary-foreground: oklch(0.96 0.005 250);
-    --muted: oklch(0.23 0.025 255);
-    --muted-foreground: oklch(0.62 0.04 255);
-    --accent: oklch(0.25 0.06 280);
-    --accent-foreground: oklch(0.96 0.005 250);
-    --destructive: oklch(0.65 0.22 25);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 12%);
-    --ring: oklch(0.68 0.22 275);
-    --success: oklch(0.62 0.18 150);
-    --success-foreground: oklch(0.12 0.02 150);
-    --warning: oklch(0.75 0.18 75);
-    --warning-foreground: oklch(0.20 0.04 75);
+    --background: oklch(0.18 0.02 140); /* Deep Earthy Sage Dark (#1E251E) */
+    --foreground: oklch(0.96 0.01 90); /* Alabaster Cream */
+    --card: oklch(0.22 0.02 140);
+    --card-foreground: oklch(0.96 0.01 90);
+    --popover: oklch(0.23 0.02 140);
+    --popover-foreground: oklch(0.96 0.01 90);
+    --primary: oklch(0.74 0.03 140); /* Sage Light (#8B9E8B) */
+    --primary-foreground: oklch(0.18 0.02 140);
+    --secondary: oklch(0.28 0.02 140);
+    --secondary-foreground: oklch(0.96 0.01 90);
+    --muted: oklch(0.25 0.02 140);
+    --muted-foreground: oklch(0.68 0.02 140);
+    --accent: oklch(0.74 0.10 75); /* Warm Sand (#C8A86B) */
+    --accent-foreground: oklch(0.18 0.02 140);
+    --destructive: oklch(0.66 0.14 28); /* Terracotta Rust Light (#D86B65) */
+    --border: oklch(1 0 0 / 12%);
+    --input: oklch(1 0 0 / 14%);
+    --ring: oklch(0.74 0.03 140);
+    --success: oklch(0.74 0.03 140);
+    --success-foreground: oklch(0.18 0.02 140);
+    --warning: oklch(0.74 0.10 75);
+    --warning-foreground: oklch(0.18 0.02 140);
 }
 
 @layer base {

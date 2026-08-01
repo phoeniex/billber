@@ -144,7 +144,7 @@ export const PayBillModal = ({ bill, isOpen, onClose, currency, onConfirmPayment
                         </Button>
                         <Button
                             type="submit"
-                            className="h-11 px-8 font-bold text-sm rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:scale-105 transition-all"
+                            className="h-11 px-8 font-bold text-sm rounded-xl bg-[#C8A96B] hover:bg-[#B8985B] text-white shadow-md hover:scale-105 transition-all cursor-pointer"
                         >
                             Confirm Payment
                         </Button>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Bill, TransactionType } from '@/types';
 import { Loader2, User as UserIcon } from 'lucide-react';
-
+import { Button } from '@/components/ui/button';
 import { AddBillForm } from './components/features/bills/AddBillForm';
 import { BillsList } from './components/features/bills/BillsList';
 import { BillCalendar } from './components/features/calendar/BillCalendar';
@@ -29,6 +29,7 @@ function App() {
     const [historyBill, setHistoryBill] = useState<Bill | null>(null);
     const [billToEdit, setBillToEdit] = useState<Bill | null>(null);
     const [transactionToEdit, setTransactionToEdit] = useState<Bill | null>(null);
+    const [userImgError, setUserImgError] = useState(false);
 
     const {
         bills,
@@ -145,7 +146,7 @@ function App() {
     }
 
     return (
-        <div className="flex flex-col lg:flex-row min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 transition-colors duration-300 font-sans relative overflow-hidden">
+        <div className="flex flex-col lg:flex-row lg:h-screen lg:overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/5 transition-colors duration-300 font-sans relative">
             {/* Animated background elements */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
@@ -153,9 +154,9 @@ function App() {
                 <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-secondary/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
             </div>
 
-            {/* Left Panel: Calendar & Summary Stats */}
-            <div className="relative z-10 w-full lg:w-[400px] xl:w-[480px] p-6 lg:p-10 flex flex-col gap-8 shrink-0 bg-card/30 backdrop-blur-md border-r border-border/30">
-                <div className="lg:sticky lg:top-10 flex flex-col gap-6">
+            {/* Left Panel: Calendar & Summary Stats (Independently Scrollable) */}
+            <div className="relative z-10 w-full lg:w-[400px] xl:w-[480px] lg:h-screen lg:overflow-y-auto p-6 lg:p-10 flex flex-col justify-between shrink-0 gap-8">
+                <div className="flex flex-col gap-6">
                     <BillCalendar bills={bills} currency={currency} locale={locale} />
 
                     {/* Financial Summary Stats in Sidebar */}
@@ -168,14 +169,20 @@ function App() {
                 {/* User Profile Card */}
                 <div
                     onClick={() => setShowUserSheet(true)}
-                    className="mt-auto lg:sticky lg:bottom-10 flex items-center justify-between p-4 bg-card/50 backdrop-blur-md rounded-2xl border border-border/20 shadow-sm cursor-pointer hover:bg-card/80 transition-all duration-200"
+                    className="mt-auto shrink-0 flex items-center justify-between p-4 bg-card/60 backdrop-blur-md rounded-2xl border border-border/20 shadow-sm cursor-pointer hover:bg-card/90 transition-all duration-200"
                     title="Click to open Account & Settings"
                 >
                     <div className="flex items-center gap-3">
                         {isAuthenticated ? (
                             <>
-                                {user?.photoURL ? (
-                                    <img src={user.photoURL} alt={user.name} className="w-10 h-10 rounded-full object-cover border border-border" />
+                                {user?.photoURL && !userImgError ? (
+                                    <img
+                                        src={user.photoURL}
+                                        alt={user.name}
+                                        referrerPolicy="no-referrer"
+                                        onError={() => setUserImgError(true)}
+                                        className="w-10 h-10 rounded-full object-cover border border-border"
+                                    />
                                 ) : (
                                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
                                         {user?.name ? user.name.charAt(0).toUpperCase() : <UserIcon size={20} />}
@@ -193,16 +200,29 @@ function App() {
                                 </div>
                                 <div>
                                     <p className="font-semibold text-sm">Guest Mode</p>
-                                    <p className="text-xs text-muted-foreground">Account & Settings</p>
+                                    <p className="text-xs text-muted-foreground">Local storage</p>
                                 </div>
                             </>
                         )}
                     </div>
+
+                    {!isAuthenticated && (
+                        <Button
+                            size="sm"
+                            onClick={(e: React.MouseEvent) => {
+                                e.stopPropagation();
+                                setShowAuthModal(true);
+                            }}
+                            className="rounded-full h-8.5 px-4 text-xs font-bold shadow-md hover:scale-105 transition-all"
+                        >
+                            Sign In
+                        </Button>
+                    )}
                 </div>
             </div>
 
-            {/* Right Main Panel: Bills & Income List */}
-            <div className="relative z-10 flex-1 bg-background/80 backdrop-blur-md p-6 lg:p-12 lg:rounded-l-[3rem] shadow-none lg:shadow-xl min-h-screen flex flex-col border-l border-border/20">
+            {/* Right Main Panel: Bills & Income List (Independently Scrollable) */}
+            <div className="relative z-10 flex-1 bg-background/80 backdrop-blur-md p-6 lg:p-12 lg:rounded-l-[3rem] shadow-none lg:shadow-xl lg:h-screen lg:overflow-y-auto flex flex-col">
                 <div className="max-w-5xl mx-auto w-full">
 
                     {/* Bills & Income List */}

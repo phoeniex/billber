@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { CURRENCIES, NUMBER_FORMATS } from '@/utils/constants';
-import { User, LogOut, LogIn, DollarSign, Globe, Sun, Moon, Laptop, ShieldCheck, Database, Check, Sparkles, X } from 'lucide-react';
+import { User, LogOut, LogIn, DollarSign, Globe, Sun, Moon, Laptop, ShieldCheck, Database, Check, Sparkles, X, Cloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
@@ -34,8 +34,9 @@ export const UserPage = ({
     onOpenAuthModal,
     totalBillsCount
 }: UserPageProps) => {
-    const { user, isAuthenticated, isFirebase, logout } = useAuth();
+    const { user, isAuthenticated, logout } = useAuth();
     const [savedNotice, setSavedNotice] = useState(false);
+    const [imgError, setImgError] = useState(false);
 
     const triggerNotice = () => {
         setSavedNotice(true);
@@ -86,8 +87,14 @@ export const UserPage = ({
 
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
                                 <div className="flex items-center gap-5">
-                                    {user?.photoURL ? (
-                                        <img src={user.photoURL} alt={user.name} className="w-16 h-16 rounded-2xl object-cover border-2 border-primary/20 shadow-md" />
+                                    {user?.photoURL && !imgError ? (
+                                        <img 
+                                            src={user.photoURL} 
+                                            alt={user.name} 
+                                            referrerPolicy="no-referrer"
+                                            onError={() => setImgError(true)}
+                                            className="w-16 h-16 rounded-2xl object-cover border-2 border-primary/20 shadow-md" 
+                                        />
                                     ) : (
                                         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white shadow-lg text-xl font-bold">
                                             {user?.name ? user.name.charAt(0).toUpperCase() : <User size={30} />}
@@ -98,18 +105,18 @@ export const UserPage = ({
                                             <h3 className="text-xl font-bold tracking-tight">
                                                 {isAuthenticated ? user?.name : 'Guest User'}
                                             </h3>
-                                            <Badge variant={isFirebase ? 'default' : 'secondary'} className="capitalize text-xs">
-                                                {isFirebase ? 'Cloud Synced' : 'Local Mode'}
+                                            <Badge variant={isAuthenticated ? 'default' : 'secondary'} className="capitalize text-xs">
+                                                {isAuthenticated ? 'Cloud Synced' : 'Guest Mode'}
                                             </Badge>
                                         </div>
                                         <p className="text-xs text-muted-foreground">
-                                            {isAuthenticated ? user?.email : 'Sign in to sync your bills across devices'}
+                                            {isAuthenticated ? user?.email : 'Local browser storage'}
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-3 w-full sm:w-auto">
-                                    {isAuthenticated ? (
+                                {isAuthenticated && (
+                                    <div className="flex items-center gap-3 w-full sm:w-auto">
                                         <Button
                                             variant="destructive"
                                             onClick={logout}
@@ -117,34 +124,46 @@ export const UserPage = ({
                                         >
                                             <LogOut className="w-4 h-4" /> Sign Out
                                         </Button>
-                                    ) : (
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Quick Stats Grid */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6 pt-6 border-t border-border/30">
+                                <div className="p-3.5 bg-muted/40 rounded-2xl border border-border/20">
+                                    <p className="text-[11px] text-muted-foreground mb-0.5 font-medium">Tracked Bills</p>
+                                    <p className="text-base font-bold">{totalBillsCount} Bills</p>
+                                </div>
+                                <div className="p-3.5 bg-muted/40 rounded-2xl border border-border/20">
+                                    <p className="text-[11px] text-muted-foreground mb-0.5 font-medium">Active Currency</p>
+                                    <p className="text-base font-bold">{activeCurrencyObj.symbol} ({activeCurrencyObj.code})</p>
+                                </div>
+                                {isAuthenticated ? (
+                                    <div className="p-3.5 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 flex flex-col justify-center">
+                                        <p className="text-[11px] text-emerald-700 dark:text-emerald-300 font-semibold mb-0.5">Storage Mode</p>
+                                        <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                                            <Cloud className="w-4 h-4" /> Firestore Cloud
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="p-3.5 bg-gradient-to-r from-primary/10 via-primary/5 to-secondary/10 rounded-2xl border border-primary/20 flex items-center justify-between gap-3 shadow-xs">
+                                        <div>
+                                            <p className="text-[11px] text-muted-foreground mb-0.5 font-medium">Storage Mode</p>
+                                            <p className="text-sm font-bold text-foreground">Browser Storage</p>
+                                            <p className="text-[10px] text-muted-foreground">Sync across devices</p>
+                                        </div>
                                         <Button
+                                            size="sm"
                                             onClick={() => {
                                                 onClose();
                                                 onOpenAuthModal();
                                             }}
-                                            className="gap-2 w-full sm:w-auto rounded-xl shadow-md text-xs h-10"
+                                            className="h-8.5 px-3 text-xs font-bold rounded-xl shadow-xs shrink-0 gap-1.5 hover:scale-105 transition-all cursor-pointer"
                                         >
-                                            <LogIn className="w-4 h-4" /> Sign In / Sign Up
+                                            <LogIn className="w-3.5 h-3.5" /> Sign In
                                         </Button>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Quick Stats Grid */}
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6 pt-6 border-t border-border/30">
-                                <div className="p-3.5 bg-muted/40 rounded-2xl border border-border/20">
-                                    <p className="text-[11px] text-muted-foreground mb-0.5">Tracked Bills</p>
-                                    <p className="text-base font-bold">{totalBillsCount} Bills</p>
-                                </div>
-                                <div className="p-3.5 bg-muted/40 rounded-2xl border border-border/20">
-                                    <p className="text-[11px] text-muted-foreground mb-0.5">Active Currency</p>
-                                    <p className="text-base font-bold">{activeCurrencyObj.symbol} ({activeCurrencyObj.code})</p>
-                                </div>
-                                <div className="p-3.5 bg-muted/40 rounded-2xl border border-border/20 col-span-2 sm:col-span-1">
-                                    <p className="text-[11px] text-muted-foreground mb-0.5">Storage Mode</p>
-                                    <p className="text-base font-bold">{isFirebase ? 'Firestore Cloud' : 'Browser Storage'}</p>
-                                </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -290,12 +309,14 @@ export const UserPage = ({
                                     <div>
                                         <p className="text-xs font-medium">Data Storage Security</p>
                                         <p className="text-[11px] text-muted-foreground">
-                                            {isFirebase ? 'Your data is secured in your Firebase Cloud Firestore collection.' : 'Your data is saved locally in browser storage.'}
+                                            {isAuthenticated
+                                                ? 'Your data is secured in your Firebase Cloud Firestore collection.'
+                                                : 'Your data is stored locally in browser storage on this device.'}
                                         </p>
                                     </div>
                                 </div>
                                 <Badge variant="outline" className="shrink-0 gap-1 text-[11px]">
-                                    <Database className="w-3 h-3" /> {isFirebase ? 'Firestore Active' : 'LocalStorage Active'}
+                                    <Database className="w-3 h-3" /> {isAuthenticated ? 'Firestore Active' : 'LocalStorage Active'}
                                 </Badge>
                             </div>
                         </div>
